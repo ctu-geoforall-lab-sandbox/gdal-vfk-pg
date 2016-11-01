@@ -14,3 +14,8 @@ How to compile
         ./configure --prefix=/usr/local --with-sqlite3 --with-pg
         make
         sudo make install
+
+References
+----------
+
+https://github.com/ctu-yfsg/2016-a-gdal-vfk-pg
