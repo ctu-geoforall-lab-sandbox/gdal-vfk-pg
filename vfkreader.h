@@ -42,14 +42,19 @@
 #include "cpl_string.h"
 
 #include "sqlite3.h"
+#include "libpg-fe.h"
 
 class IVFKReader;
 class IVFKDataBlock;
 class VFKFeature;
+class VFKFeatureDB;
 class VFKFeatureSQLite;
+class VFKFeaturePG;
 
 typedef std::vector<VFKFeature *>       VFKFeatureList;
+typedef std::vector<VFKFeatureDB *>     VFKFeatureDBList;
 typedef std::vector<VFKFeatureSQLite *> VFKFeatureSQLiteList;
+typedef std::vector<VFKFeaturePG *>     VFKFeaturePGList;
 
 #define FID_COLUMN   "ogr_fid"
 #define GEOM_COLUMN  "geometry"
@@ -137,7 +142,7 @@ private:
 
     bool                 SetProperty(int, const char *);
 
-    friend class         VFKFeatureSQLite;
+    friend class         VFKFeatureDB;
 
     bool                 LoadGeometryPoint();
     bool                 LoadGeometryLineStringSBP();
@@ -156,14 +161,15 @@ public:
     bool                 AppendLineToRing(int, const OGRLineString *);
 };
 
+
 /************************************************************************/
-/*                              VFKFeatureSQLite                        */
+/*                              VFKFeatureDB                            */
 /************************************************************************/
-class VFKFeatureSQLite : public IVFKFeature
+class VFKFeatureDB : public IVFKFeature
 {
 private:
     int                  m_iRowId;           /* rowid in DB */
-    sqlite3_stmt        *m_hStmt;
+    sqlite3_stmt        *m_hStmt;            // TODO: data type for pg statment?
 
     bool                 LoadGeometryPoint();
     bool                 LoadGeometryLineStringSBP();
@@ -175,12 +181,28 @@ private:
     void                 FinalizeSQL();
 
 public:
-    VFKFeatureSQLite(IVFKDataBlock *);
-    VFKFeatureSQLite(IVFKDataBlock *, int, GIntBig);
-    VFKFeatureSQLite(const VFKFeature *);
+    VFKFeatureDB(IVFKDataBlock *);
+    VFKFeatureDB(IVFKDataBlock *, int, GIntBig);
+    VFKFeatureDB(const VFKFeature *);
 
     OGRErr               LoadProperties(OGRFeature *);
     void                 SetRowId(int);
+};
+
+/************************************************************************/
+/*                              VFKFeatureSQLite                        */
+/************************************************************************/
+class VFKFeatureSQLite : public VFKFeatureDB
+{
+   
+};
+
+/************************************************************************/
+/*                              VFKFeaturePG                            */
+/************************************************************************/
+class VFKFeaturePG : public VFKFeatureDB
+{
+   
 };
 
 /************************************************************************/
@@ -308,9 +330,9 @@ public:
 };
 
 /************************************************************************/
-/*                              VFKDataBlockSQLite                      */
+/*                              VFKDataBlockDB                          */
 /************************************************************************/
-class VFKDataBlockSQLite : public IVFKDataBlock
+class VFKDataBlockDB : public IVFKDataBlock
 {
 private:
     bool                 SetGeometryLineString(VFKFeatureSQLite *, OGRLineString *,
@@ -330,14 +352,30 @@ private:
     void                 UpdateFID(GIntBig, std::vector<int>);
 
 public:
-    VFKDataBlockSQLite(const char *pszName, const IVFKReader *poReader) : IVFKDataBlock(pszName, poReader) {}
+    VFKDataBlockDB(const char *pszName, const IVFKReader *poReader) : IVFKDataBlock(pszName, poReader) {}
 
     const char          *GetKey() const;
     IVFKFeature         *GetFeature(GIntBig);
-    VFKFeatureSQLite    *GetFeature( const char *, GUIntBig, bool = false );
-    VFKFeatureSQLite    *GetFeature( const char **, GUIntBig *, int,
+    VFKFeatureDB        *GetFeature( const char *, GUIntBig, bool = false );
+    VFKFeatureDB        *GetFeature( const char **, GUIntBig *, int,
                                      bool = false);
-    VFKFeatureSQLiteList GetFeatures(const char **, GUIntBig *, int);
+    VFKFeatureDBList GetFeatures(const char **, GUIntBig *, int);
+};
+
+/************************************************************************/
+/*                              VFKDataBlockSQLite                      */
+/************************************************************************/
+class VFKDataBlockSQLite : public VFKDataBlockDB
+{
+
+};
+
+/************************************************************************/
+/*                              VFKDataBlockPG                      */
+/************************************************************************/
+class VFKDataBlockPG : public VFKDataBlockDB
+{
+
 };
 
 /************************************************************************/

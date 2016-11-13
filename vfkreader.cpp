@@ -33,12 +33,15 @@
 
 #include "vfkreader.h"
 #include "vfkreaderp.h"
+#include "vfkreaderpg.h"
+#include "vfkreadersqlite.h"
 
 #include "cpl_conv.h"
 #include "cpl_error.h"
 #include "cpl_string.h"
 
 #include "ogr_geometry.h"
+
 
 CPL_CVSID("$Id: vfkreader.cpp 35911 2016-10-24 15:03:26Z goatbar $");
 
@@ -58,7 +61,16 @@ IVFKReader::~IVFKReader()
 */
 IVFKReader *CreateVFKReader(const char *pszFilename)
 {
-    return new VFKReaderSQLite(pszFilename);
+   const char *pszDbNameConf = CPLGetConfigOption("OGR_VFK_DB_NAME", NULL);
+   if (pszDbNameConf && STARTS_WITH(pszDbNameConf, "PG:"))
+     {
+	
+	return new VFKReaderPG(pszFilename);
+	return NULL;
+     }
+		      
+   return new VFKReaderSQLite(pszFilename);
+   
 }
 
 /*!
