@@ -47,14 +47,7 @@ CPL_CVSID("$Id: vfkreadersqlite.cpp 35933 2016-10-25 16:46:26Z goatbar $");
   \brief VFKReaderSQLite constructor
 */
 VFKReaderSQLite::VFKReaderSQLite( const char *pszFileName ) :
-    VFKReaderDB(pszFileName),
-    m_pszDBname(NULL),
-    m_poDB(NULL),
-    // True - build geometry from DB
-    // False - store also geometry in DB
-    m_bSpatial(CPLTestBool(CPLGetConfigOption("OGR_VFK_DB_SPATIAL", "YES"))),
-    m_bNewDb(false),
-    m_bDbSource(false)
+    VFKReaderDB(pszFileName)
 {
     size_t nLen = 0;
     VSIStatBufL sStatBufDb;
@@ -131,10 +124,12 @@ VFKReaderSQLite::VFKReaderSQLite( const char *pszFileName ) :
     CPLDebug("OGR-VFK", "New DB: %s Spatial: %s",
              m_bNewDb ? "yes" : "no", m_bSpatial ? "yes" : "no");
 
-    if (SQLITE_OK != sqlite3_open(osDbName, &m_poDB)) {
+    sqlite3 *poDB = static_cast<sqlite3*>(m_poDB);
+
+    if (SQLITE_OK != sqlite3_open(osDbName, &poDB)) {
         CPLError(CE_Failure, CPLE_AppDefined,
                  "Creating SQLite DB failed: %s",
-                 sqlite3_errmsg(m_poDB));
+                 sqlite3_errmsg(poDB));
     }
 
     int nRowCount = 0;
@@ -149,7 +144,7 @@ VFKReaderSQLite::VFKReaderSQLite( const char *pszFileName ) :
 
         osCommand.Printf("SELECT * FROM sqlite_master WHERE type='table' AND name='%s'",
                          VFK_DB_TABLE);
-        sqlite3_get_table(m_poDB,
+        sqlite3_get_table(poDB,
                           osCommand.c_str(),
                           &papszResult,
                           &nRowCount, &nColCount, &pszErrMsg);
@@ -158,7 +153,7 @@ VFKReaderSQLite::VFKReaderSQLite( const char *pszFileName ) :
 
         if (nRowCount != 1) {
             /* DB is not valid VFK datasource */
-            sqlite3_close(m_poDB);
+            sqlite3_close(poDB);
             m_poDB = NULL;
             return;
         }
@@ -171,7 +166,7 @@ VFKReaderSQLite::VFKReaderSQLite( const char *pszFileName ) :
         char** papszResult = NULL;
         nRowCount = nColCount = 0;
         osCommand.Printf("SELECT * FROM %s LIMIT 1", VFK_DB_TABLE);
-        sqlite3_get_table(m_poDB,
+        sqlite3_get_table(poDB,
                           osCommand.c_str(),
                           &papszResult,
                           &nRowCount, &nColCount, &pszErrMsg);
@@ -187,16 +182,16 @@ VFKReaderSQLite::VFKReaderSQLite( const char *pszFileName ) :
                          "Invalid VFK DB datasource");
             }
 
-            if (SQLITE_OK != sqlite3_close(m_poDB)) {
+            if (SQLITE_OK != sqlite3_close(poDB)) {
                 CPLError(CE_Failure, CPLE_AppDefined,
                          "Closing SQLite DB failed: %s",
                          sqlite3_errmsg(m_poDB));
             }
             VSIUnlink(osDbName);
-            if (SQLITE_OK != sqlite3_open(osDbName, &m_poDB)) {
+            if (SQLITE_OK != sqlite3_open(osDbName, &poDB)) {
                 CPLError(CE_Failure, CPLE_AppDefined,
                          "Creating SQLite DB failed: %s",
-                         sqlite3_errmsg(m_poDB));
+                         sqlite3_errmsg(poDB));
             }
             CPLDebug("OGR-VFK", "Internal DB (%s) is invalid - will be re-created",
                      m_pszDBname);
@@ -206,7 +201,7 @@ VFKReaderSQLite::VFKReaderSQLite( const char *pszFileName ) :
     }
 
     char* pszErrMsg = NULL;
-    CPL_IGNORE_RET_VAL(sqlite3_exec(m_poDB, "PRAGMA synchronous = OFF",
+    CPL_IGNORE_RET_VAL(sqlite3_exec(poDB, "PRAGMA synchronous = OFF",
                                     NULL, NULL, &pszErrMsg));
     sqlite3_free(pszErrMsg);
 

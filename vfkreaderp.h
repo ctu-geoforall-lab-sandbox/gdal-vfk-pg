@@ -122,12 +122,6 @@ public:
 class VFKReaderDB : public VFKReader
 {
 private:
-    char          *m_pszDBname;
-    sqlite3       *m_poDB;
-    bool           m_bSpatial;
-    bool           m_bNewDb;
-    bool           m_bDbSource;
-
     IVFKDataBlock *CreateDataBlock(const char *);
     void           AddDataBlock(IVFKDataBlock *, const char *);
     OGRErr         AddFeature(IVFKDataBlock *, VFKFeature *);
@@ -137,6 +131,14 @@ private:
     void           CreateIndex(const char *, const char *, const char *, bool = true);
 
     friend class   VFKFeatureDB;
+
+protected:
+    char          *m_pszDBname;
+    void          *m_poDB;
+    bool           m_bDbSource;
+    bool           m_bNewDb;
+    bool           m_bSpatial;
+
 public:
     VFKReaderDB(const char *);
     virtual ~VFKReaderDB();

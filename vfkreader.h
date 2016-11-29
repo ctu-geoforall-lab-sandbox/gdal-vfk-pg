@@ -42,7 +42,7 @@
 #include "cpl_string.h"
 
 #include "sqlite3.h"
-#include "libpg-fe.h"
+#include "libpq-fe.h"
 
 class IVFKReader;
 class IVFKDataBlock;

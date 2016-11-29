@@ -17,9 +17,6 @@ private:
    OGRErr        ExecuteSQL(sqlite3_stmt *);
    std::vector<sqlite3_stmt *>m_hStmt; // TODO: ** ?
    
-protected:
-   sqlite3 *m_poDB;
-   
 public:
    VFKReaderSQLite(const char *);
    virtual ~VFKReaderSQLite();
