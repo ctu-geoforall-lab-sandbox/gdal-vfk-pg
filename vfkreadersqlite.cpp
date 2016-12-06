@@ -47,7 +47,8 @@ CPL_CVSID("$Id: vfkreadersqlite.cpp 35933 2016-10-25 16:46:26Z goatbar $");
   \brief VFKReaderSQLite constructor
 */
 VFKReaderSQLite::VFKReaderSQLite( const char *pszFileName ) :
-    VFKReaderDB(pszFileName)
+  VFKReaderDB(pszFileName),
+    m_poDB(NULL)
 {
     size_t nLen = 0;
     VSIStatBufL sStatBufDb;
@@ -124,12 +125,10 @@ VFKReaderSQLite::VFKReaderSQLite( const char *pszFileName ) :
     CPLDebug("OGR-VFK", "New DB: %s Spatial: %s",
              m_bNewDb ? "yes" : "no", m_bSpatial ? "yes" : "no");
 
-    sqlite3 *poDB = static_cast<sqlite3*>(m_poDB);
-
-    if (SQLITE_OK != sqlite3_open(osDbName, &poDB)) {
+    if (SQLITE_OK != sqlite3_open(osDbName, &m_poDB)) {
         CPLError(CE_Failure, CPLE_AppDefined,
                  "Creating SQLite DB failed: %s",
-                 sqlite3_errmsg(poDB));
+                 sqlite3_errmsg(m_poDB));
     }
 
     int nRowCount = 0;
@@ -144,7 +143,7 @@ VFKReaderSQLite::VFKReaderSQLite( const char *pszFileName ) :
 
         osCommand.Printf("SELECT * FROM sqlite_master WHERE type='table' AND name='%s'",
                          VFK_DB_TABLE);
-        sqlite3_get_table(poDB,
+        sqlite3_get_table(m_poDB,
                           osCommand.c_str(),
                           &papszResult,
                           &nRowCount, &nColCount, &pszErrMsg);
@@ -153,7 +152,7 @@ VFKReaderSQLite::VFKReaderSQLite( const char *pszFileName ) :
 
         if (nRowCount != 1) {
             /* DB is not valid VFK datasource */
-            sqlite3_close(poDB);
+            sqlite3_close(m_poDB);
             m_poDB = NULL;
             return;
         }
@@ -166,7 +165,7 @@ VFKReaderSQLite::VFKReaderSQLite( const char *pszFileName ) :
         char** papszResult = NULL;
         nRowCount = nColCount = 0;
         osCommand.Printf("SELECT * FROM %s LIMIT 1", VFK_DB_TABLE);
-        sqlite3_get_table(poDB,
+        sqlite3_get_table(m_poDB,
                           osCommand.c_str(),
                           &papszResult,
                           &nRowCount, &nColCount, &pszErrMsg);
@@ -182,16 +181,16 @@ VFKReaderSQLite::VFKReaderSQLite( const char *pszFileName ) :
                          "Invalid VFK DB datasource");
             }
 
-            if (SQLITE_OK != sqlite3_close(poDB)) {
+            if (SQLITE_OK != sqlite3_close(m_poDB)) {
                 CPLError(CE_Failure, CPLE_AppDefined,
                          "Closing SQLite DB failed: %s",
                          sqlite3_errmsg(m_poDB));
             }
             VSIUnlink(osDbName);
-            if (SQLITE_OK != sqlite3_open(osDbName, &poDB)) {
+            if (SQLITE_OK != sqlite3_open(osDbName, &m_poDB)) {
                 CPLError(CE_Failure, CPLE_AppDefined,
                          "Creating SQLite DB failed: %s",
-                         sqlite3_errmsg(poDB));
+                         sqlite3_errmsg(m_poDB));
             }
             CPLDebug("OGR-VFK", "Internal DB (%s) is invalid - will be re-created",
                      m_pszDBname);
@@ -201,7 +200,7 @@ VFKReaderSQLite::VFKReaderSQLite( const char *pszFileName ) :
     }
 
     char* pszErrMsg = NULL;
-    CPL_IGNORE_RET_VAL(sqlite3_exec(poDB, "PRAGMA synchronous = OFF",
+    CPL_IGNORE_RET_VAL(sqlite3_exec(m_poDB, "PRAGMA synchronous = OFF",
                                     NULL, NULL, &pszErrMsg));
     sqlite3_free(pszErrMsg);
 
@@ -252,29 +251,33 @@ VFKReaderSQLite::~VFKReaderSQLite()
 
   \return pointer to sqlite3_stmt instance or NULL on error
 */
-sqlite3_stmt *VFKReaderSQLite::PrepareStatement(const char *pszSQLCommand)
+void VFKReaderSQLite::PrepareStatement(const char *pszSQLCommand, unsigned int idx)
 {
-    CPLDebug("OGR-VFK", "VFKReaderSQLite::PrepareStatement(): %s", pszSQLCommand);
+    int rc;
+    CPLDebug("OGR-VFK", "VFKReaderDB::PrepareStatement(): %s", pszSQLCommand);
 
-    sqlite3_stmt *hStmt = NULL;
-    const int rc = sqlite3_prepare(m_poDB, pszSQLCommand, -1,
-                                   &hStmt, NULL);
+    if (idx < m_hStmt.size()) {
+        sqlite3_stmt *hStmt;
+        rc = sqlite3_prepare(m_poDB, pszSQLCommand, -1,
+                             &hStmt, NULL);
+        m_hStmt.push_back(hStmt);
+    }
+    else {
+        rc = sqlite3_prepare(m_poDB, pszSQLCommand, -1,
+                             &(m_hStmt[idx]), NULL);
+    }
 
-    // TODO(schwehr): if( rc == SQLITE_OK ) return NULL;
-    if (rc != SQLITE_OK)
-    {
+    // TODO(schwehr): if( rc == SQLITE_OK ) return NULL;    
+    if (rc != SQLITE_OK) {
         CPLError(CE_Failure, CPLE_AppDefined,
                  "In PrepareStatement(): sqlite3_prepare(%s):\n  %s",
                  pszSQLCommand, sqlite3_errmsg(m_poDB));
 
-        if(hStmt != NULL) {
-            sqlite3_finalize(hStmt);
+        if(m_hStmt[idx] != NULL) {
+            sqlite3_finalize(m_hStmt[idx]);
+            m_hStmt.erase(m_hStmt.begin() + idx);
         }
-
-        return NULL;
     }
-
-    return hStmt;
 }
 
 /*!
@@ -332,4 +335,56 @@ OGRErr VFKReaderSQLite::ExecuteSQL( const char *pszSQLCommand, bool bQuiet )
     }
 
     return OGRERR_NONE;
+}
+
+OGRErr VFKReaderSQLite::ExecuteSQL(const char *pszSQLCommand, int& count)
+{
+    OGRErr ret;
+    
+    PrepareStatement(pszSQLCommand);
+    ret = ExecuteSQL(m_hStmt[0]); // TODO: solve
+    if (ret == OGRERR_NONE) {
+        count = sqlite3_column_int(m_hStmt[0], 0); // TODO:
+    }
+
+    sqlite3_finalize(m_hStmt[0]); // TODO
+    m_hStmt[0] = NULL; // TODO
+
+    return ret;
+}
+
+OGRErr VFKReaderSQLite::ExecuteSQL(std::vector<VFKDbValue>& record, int idx)
+{
+    OGRErr ret;
+    
+    ret = ExecuteSQL(m_hStmt[idx]);
+    // TODO: num_of_column == size
+    if (ret == OGRERR_NONE) {
+        for (unsigned int i = 0; i < record.size(); i++) { // TODO: iterator
+            VFKDbValue *value = &(record[i]);
+            switch (value->get_type()) {
+            case DT_INT:
+                value->set_int(sqlite3_column_int(m_hStmt[idx], i));
+                break;
+            case DT_BIGINT:
+                value->set_bigint(sqlite3_column_int64(m_hStmt[idx], i));
+                break;
+            case DT_DOUBLE:
+                value->set_double(sqlite3_column_double(m_hStmt[idx], i));
+                break;
+            case DT_TEXT:
+                value->set_text((char *)sqlite3_column_text(m_hStmt[idx], i));
+                break;
+            }
+        }
+    }
+    else {
+        sqlite3_finalize(m_hStmt[idx]);
+        m_hStmt[idx] = NULL;
+        if (idx > 0) {
+            m_hStmt.erase(m_hStmt.begin() + idx);
+        }
+    }
+
+    return ret;
 }

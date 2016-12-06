@@ -134,7 +134,6 @@ private:
 
 protected:
     char          *m_pszDBname;
-    void          *m_poDB;
     bool           m_bDbSource;
     bool           m_bNewDb;
     bool           m_bSpatial;
@@ -145,11 +144,12 @@ public:
 
     bool          IsSpatial() const { return m_bSpatial; }
     bool          IsPreProcessed() const { return !m_bNewDb; }
-    bool          IsValid() const { return m_poDB != NULL; }
     int           ReadDataBlocks();
     int           ReadDataRecords(IVFKDataBlock * = NULL);
 
-    virtual void    PrepareStatement(const char *, int = 0) = 0;
+    virtual bool    IsValid() const = 0;
+
+    virtual void    PrepareStatement(const char *, unsigned int = 0) = 0;
     virtual OGRErr  ExecuteSQL(const char *, bool = FALSE) = 0;
     virtual OGRErr  ExecuteSQL(const char *, int&) = 0;
     virtual OGRErr  ExecuteSQL(std::vector<VFKDbValue>&, int = 0) = 0;

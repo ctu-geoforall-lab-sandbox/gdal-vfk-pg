@@ -12,19 +12,20 @@ class VFKReaderPG : public VFKReaderDB
 {
    
 private:
-   OGRErr        ExecuteSQL(PGresult *);
-   std::vector<PGresult *> m_hStmt;
-   
-protected:
    PGconn     *m_poDB;
    PGresult   *m_res;
    const char *m_pszConnStr;
-   
+
+   OGRErr        ExecuteSQL(PGresult *);
+   std::vector<PGresult *> m_hStmt;
+  
 public:
    VFKReaderPG(const char *);
    virtual ~VFKReaderPG();
+
+   bool          IsValid() const { return m_poDB != NULL; }
    
-   void          PrepareStatement(const char *, int = 0);
+   void          PrepareStatement(const char *, unsigned int = 0);
    OGRErr        ExecuteSQL(const char *, bool = FALSE);
    OGRErr        ExecuteSQL(const char *, int&);
    OGRErr        ExecuteSQL(std::vector<VFKDbValue>&, int = 0);

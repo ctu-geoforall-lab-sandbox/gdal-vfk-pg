@@ -63,12 +63,8 @@ IVFKReader *CreateVFKReader(const char *pszFilename)
 {
    const char *pszDbNameConf = CPLGetConfigOption("OGR_VFK_DB_NAME", NULL);
    if (pszDbNameConf && STARTS_WITH(pszDbNameConf, "PG:"))
-     {
-	
-	return new VFKReaderPG(pszFilename);
-	return NULL;
-     }
-		      
+       return new VFKReaderPG(pszFilename);
+   
    return new VFKReaderSQLite(pszFilename);
    
 }

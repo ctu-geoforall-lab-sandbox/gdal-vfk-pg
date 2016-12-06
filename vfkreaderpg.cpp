@@ -47,7 +47,9 @@ CPL_CVSID("$Id: vfkreadersqlite.cpp 35933 2016-10-25 16:46:26Z goatbar $");
 /*!
  *   \brief VFKReaderPG constructor
  * */
-VFKReaderPG::VFKReaderPG(const char *pszFileName) : VFKReaderDB(pszFileName)
+VFKReaderPG::VFKReaderPG(const char *pszFileName) :
+  VFKReaderDB(pszFileName),
+  m_poDB(NULL)
 {
 }
 

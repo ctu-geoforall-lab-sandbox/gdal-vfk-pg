@@ -44,7 +44,7 @@ CPL_CVSID("$Id: vfkdatablocksqlite.cpp 35571 2016-09-30 20:37:19Z goatbar $");
 
   \return number of invalid features
 */
-int VFKDataBlockSQLite::LoadGeometryPoint()
+int VFKDataBlockDB:LoadGeometryPoint()
 {
     if (LoadGeometryFromDB()) /* try to load geometry from DB */
         return 0;
@@ -108,7 +108,7 @@ int VFKDataBlockSQLite::LoadGeometryPoint()
   \param[in,out] rowIdFeat list of row ids which forms linestring
   \param[in,out] nGeometries number of features with valid geometry
 */
-bool VFKDataBlockSQLite::SetGeometryLineString(VFKFeatureSQLite *poLine, OGRLineString *oOGRLine,
+bool VFKDataBlockDB:SetGeometryLineString(VFKFeatureSQLite *poLine, OGRLineString *oOGRLine,
                                                bool& bValid, const char *ftype,
                                                std::vector<int>& rowIdFeat, int& nGeometries)
 {
@@ -201,7 +201,7 @@ bool VFKDataBlockSQLite::SetGeometryLineString(VFKFeatureSQLite *poLine, OGRLine
 
   \return number of invalid features
 */
-int VFKDataBlockSQLite::LoadGeometryLineStringSBP()
+int VFKDataBlockDB:LoadGeometryLineStringSBP()
 {
     int nInvalid = 0;
 
@@ -337,7 +337,7 @@ int VFKDataBlockSQLite::LoadGeometryLineStringSBP()
 
   \return number of invalid features
 */
-int VFKDataBlockSQLite::LoadGeometryLineStringHP()
+int VFKDataBlockDB:LoadGeometryLineStringHP()
 {
     int nInvalid = 0;
     VFKReaderSQLite *poReader = (VFKReaderSQLite*) m_poReader;
@@ -400,7 +400,7 @@ int VFKDataBlockSQLite::LoadGeometryLineStringHP()
             poOgrGeometry = poLine->GetGeometry();
         }
         if (!poOgrGeometry || !poFeature->SetGeometry(poOgrGeometry)) {
-            CPLDebug("OGR-VFK", "VFKDataBlockSQLite::LoadGeometryLineStringHP(): name=%s fid=%ld "
+            CPLDebug("OGR-VFK", "VFKDataBlockDB:LoadGeometryLineStringHP(): name=%s fid=%ld "
                      "id=" CPL_FRMT_GUIB " -> %s geometry", m_pszName, iFID, vrValue[0],
                      poOgrGeometry ? "invalid" : "empty");
             nInvalid++;
@@ -428,7 +428,7 @@ int VFKDataBlockSQLite::LoadGeometryLineStringHP()
 
   \return number of invalid features
 */
-int VFKDataBlockSQLite::LoadGeometryPolygon()
+int VFKDataBlockDB:LoadGeometryPolygon()
 {
     VFKReaderSQLite *poReader = (VFKReaderSQLite*) m_poReader;
 
@@ -702,7 +702,7 @@ int VFKDataBlockSQLite::LoadGeometryPolygon()
 
   \return pointer to feature definition or NULL on failure (not found)
 */
-IVFKFeature *VFKDataBlockSQLite::GetFeature(GIntBig nFID)
+IVFKFeature *VFKDataBlockDB:GetFeature(GIntBig nFID)
 {
     if (m_nFeatureCount < 0) {
         m_poReader->ReadDataRecords(this);
@@ -744,7 +744,7 @@ IVFKFeature *VFKDataBlockSQLite::GetFeature(GIntBig nFID)
 
   \return pointer to feature definition or NULL on failure (not found)
 */
-VFKFeatureSQLite *VFKDataBlockSQLite::GetFeature(const char *column, GUIntBig value,
+VFKFeatureSQLite *VFKDataBlockDB:GetFeature(const char *column, GUIntBig value,
                                                  bool bGeom)
 {
     VFKReaderSQLite *poReader = (VFKReaderSQLite*) m_poReader;
@@ -783,7 +783,7 @@ VFKFeatureSQLite *VFKDataBlockSQLite::GetFeature(const char *column, GUIntBig va
 
   \return pointer to feature definition or NULL on failure (not found)
 */
-VFKFeatureSQLite *VFKDataBlockSQLite::GetFeature(const char **column, GUIntBig *value, int num,
+VFKFeatureSQLite *VFKDataBlockDB:GetFeature(const char **column, GUIntBig *value, int num,
                                                  bool bGeom)
 {
     VFKReaderSQLite *poReader = (VFKReaderSQLite*) m_poReader;
@@ -828,7 +828,7 @@ VFKFeatureSQLite *VFKDataBlockSQLite::GetFeature(const char **column, GUIntBig *
 
   \return list of features
 */
-VFKFeatureSQLiteList VFKDataBlockSQLite::GetFeatures(const char **column, GUIntBig *value, int num)
+VFKFeatureSQLiteList VFKDataBlockDB:GetFeatures(const char **column, GUIntBig *value, int num)
 {
     VFKReaderSQLite *poReader = (VFKReaderSQLite*) m_poReader;
 
@@ -864,7 +864,7 @@ VFKFeatureSQLiteList VFKDataBlockSQLite::GetFeatures(const char **column, GUIntB
 
   \return OGRERR_NONE on success otherwise OGRERR_FAILURE
 */
-OGRErr VFKDataBlockSQLite::SaveGeometryToDB(const OGRGeometry *poGeom, int iRowId)
+OGRErr VFKDataBlockDB:SaveGeometryToDB(const OGRGeometry *poGeom, int iRowId)
 {
     int        rc, nWKBLen;
     CPLString  osSQL;
@@ -904,7 +904,7 @@ OGRErr VFKDataBlockSQLite::SaveGeometryToDB(const OGRGeometry *poGeom, int iRowI
 
   \return true if geometry successfully loaded otherwise false
 */
-bool VFKDataBlockSQLite::LoadGeometryFromDB()
+bool VFKDataBlockDB:LoadGeometryFromDB()
 {
     VFKReaderSQLite *poReader = (VFKReaderSQLite*) m_poReader;
 
@@ -990,7 +990,7 @@ bool VFKDataBlockSQLite::LoadGeometryFromDB()
 
   \param nGeometries number of geometries to update
 */
-void VFKDataBlockSQLite::UpdateVfkBlocks(int nGeometries) {
+void VFKDataBlockDB:UpdateVfkBlocks(int nGeometries) {
     CPLString osSQL;
 
     VFKReaderSQLite *poReader = (VFKReaderSQLite*) m_poReader;
@@ -1006,7 +1006,7 @@ void VFKDataBlockSQLite::UpdateVfkBlocks(int nGeometries) {
     /* update number of geometries in VFK_DB_TABLE table */
     if (nGeometries > 0) {
         CPLDebug("OGR-VFK",
-                 "VFKDataBlockSQLite::UpdateVfkBlocks(): name=%s -> "
+                 "VFKDataBlockDB:UpdateVfkBlocks(): name=%s -> "
                  "%d geometries saved to internal DB", m_pszName, nGeometries);
 
         osSQL.Printf("UPDATE %s SET num_geometries = %d WHERE table_name = '%s'",
@@ -1021,7 +1021,7 @@ void VFKDataBlockSQLite::UpdateVfkBlocks(int nGeometries) {
   \param iFID feature id to set up
   \param rowId list of rows to update
 */
-void VFKDataBlockSQLite::UpdateFID(GIntBig iFID, std::vector<int> rowId)
+void VFKDataBlockDB:UpdateFID(GIntBig iFID, std::vector<int> rowId)
 {
     CPLString osSQL, osValue;
     VFKReaderSQLite *poReader = (VFKReaderSQLite*) m_poReader;
@@ -1048,7 +1048,7 @@ void VFKDataBlockSQLite::UpdateFID(GIntBig iFID, std::vector<int> rowId)
 
   \return true if closed otherwise false
 */
-bool VFKDataBlockSQLite::IsRingClosed( const OGRLinearRing *poRing )
+bool VFKDataBlockDB:IsRingClosed( const OGRLinearRing *poRing )
 {
     const int nPoints = poRing->getNumPoints();
     if (nPoints < 3)
@@ -1066,7 +1066,7 @@ bool VFKDataBlockSQLite::IsRingClosed( const OGRLinearRing *poRing )
 
   \return property name or NULL
 */
-const char *VFKDataBlockSQLite::GetKey() const
+const char *VFKDataBlockDB:GetKey() const
 {
     if( GetPropertyCount() > 1 )
     {

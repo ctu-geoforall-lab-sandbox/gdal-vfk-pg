@@ -49,15 +49,14 @@ CPL_CVSID("$Id: vfkreadersqlite.cpp 35933 2016-10-25 16:46:26Z goatbar $");
  * */
 VFKReaderDB::VFKReaderDB(const char *pszFileName) : 
     VFKReader(pszFileName),
-    m_poDB(NULL),
     // SQLite: filepath
     // PostgreSQL: connection string
     m_pszDBname(NULL),
     // True - build geometry from DB
     // False - store also geometry in DB
-    m_bSpatial(CPLTestBool(CPLGetConfigOption("OGR_VFK_DB_SPATIAL", "YES"))),
+    m_bDbSource(false),
     m_bNewDb(false),
-    m_bDbSource(false)
+    m_bSpatial(CPLTestBool(CPLGetConfigOption("OGR_VFK_DB_SPATIAL", "YES")))
 {       
 }
        

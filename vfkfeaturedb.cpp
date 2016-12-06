@@ -43,7 +43,7 @@ CPL_CVSID("$Id: vfkfeaturesqlite.cpp 35571 2016-09-30 20:37:19Z goatbar $");
 
   \param poDataBlock pointer to related IVFKDataBlock
 */
-VFKFeatureSQLite::VFKFeatureSQLite( IVFKDataBlock *poDataBlock ) :
+VFKFeatureDB:VFKFeatureDB( IVFKDataBlock *poDataBlock ) :
     IVFKFeature(poDataBlock),
     // Starts at 1.
     m_iRowId(static_cast<int>(poDataBlock->GetFeatureCount() + 1)),
@@ -60,7 +60,7 @@ VFKFeatureSQLite::VFKFeatureSQLite( IVFKDataBlock *poDataBlock ) :
   \param iRowId feature DB rowid (starts at 1)
   \param nFID feature id
 */
-VFKFeatureSQLite::VFKFeatureSQLite( IVFKDataBlock *poDataBlock, int iRowId,
+VFKFeatureDB:VFKFeatureDB( IVFKDataBlock *poDataBlock, int iRowId,
                                     GIntBig nFID) :
     IVFKFeature(poDataBlock),
     m_iRowId(iRowId),
@@ -72,7 +72,7 @@ VFKFeatureSQLite::VFKFeatureSQLite( IVFKDataBlock *poDataBlock, int iRowId,
 /*!
   \brief Read FID from DB
 */
-OGRErr VFKFeatureSQLite::SetFIDFromDB()
+OGRErr VFKFeatureDB:SetFIDFromDB()
 {
     CPLString   osSQL;
 
@@ -93,7 +93,7 @@ OGRErr VFKFeatureSQLite::SetFIDFromDB()
 
   \param iRowId row id to be set
 */
-void VFKFeatureSQLite::SetRowId(int iRowId)
+void VFKFeatureDB:SetRowId(int iRowId)
 {
     m_iRowId = iRowId;
 }
@@ -101,7 +101,7 @@ void VFKFeatureSQLite::SetRowId(int iRowId)
 /*!
   \brief Finalize SQL statement
 */
-void VFKFeatureSQLite::FinalizeSQL()
+void VFKFeatureDB:FinalizeSQL()
 {
     sqlite3_finalize(m_hStmt);
     m_hStmt = NULL;
@@ -114,7 +114,7 @@ void VFKFeatureSQLite::FinalizeSQL()
 
   \return OGRERR_NONE on success or OGRERR_FAILURE on error
 */
-OGRErr VFKFeatureSQLite::ExecuteSQL(const char *pszSQLCommand)
+OGRErr VFKFeatureDB:ExecuteSQL(const char *pszSQLCommand)
 {
     VFKReaderSQLite *poReader = (VFKReaderSQLite *) m_poDataBlock->GetReader();
     sqlite3  *poDB = poReader->m_poDB;
@@ -152,7 +152,7 @@ OGRErr VFKFeatureSQLite::ExecuteSQL(const char *pszSQLCommand)
 
   Read VFK feature from VFK file and insert it into DB
 */
-VFKFeatureSQLite::VFKFeatureSQLite( const VFKFeature *poVFKFeature ) :
+VFKFeatureDB:VFKFeatureDB( const VFKFeature *poVFKFeature ) :
     IVFKFeature(poVFKFeature->m_poDataBlock),
     // Starts at 1.
     m_iRowId(static_cast<int>(
@@ -169,7 +169,7 @@ VFKFeatureSQLite::VFKFeatureSQLite( const VFKFeature *poVFKFeature ) :
 
   \return true on success or false on failure
 */
-bool VFKFeatureSQLite::LoadGeometryPoint()
+bool VFKFeatureDB:LoadGeometryPoint()
 {
     return false;
 }
@@ -181,7 +181,7 @@ bool VFKFeatureSQLite::LoadGeometryPoint()
 
   \return true on success or false on failure
 */
-bool VFKFeatureSQLite::LoadGeometryLineStringSBP()
+bool VFKFeatureDB:LoadGeometryLineStringSBP()
 {
     return false;
 }
@@ -193,7 +193,7 @@ bool VFKFeatureSQLite::LoadGeometryLineStringSBP()
 
   \return true on success or false on failure
 */
-bool VFKFeatureSQLite::LoadGeometryLineStringHP()
+bool VFKFeatureDB:LoadGeometryLineStringHP()
 {
     return false;
 }
@@ -205,7 +205,7 @@ bool VFKFeatureSQLite::LoadGeometryLineStringHP()
 
   \return true on success or false on failure
 */
-bool VFKFeatureSQLite::LoadGeometryPolygon()
+bool VFKFeatureDB:LoadGeometryPolygon()
 {
     return false;
 }
@@ -217,7 +217,7 @@ bool VFKFeatureSQLite::LoadGeometryPolygon()
 
   \return OGRERR_NONE on success or OGRERR_FAILURE on failure
 */
-OGRErr VFKFeatureSQLite::LoadProperties(OGRFeature *poFeature)
+OGRErr VFKFeatureDB:LoadProperties(OGRFeature *poFeature)
 {
     CPLString   osSQL;
 
