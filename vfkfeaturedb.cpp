@@ -116,8 +116,9 @@ void VFKFeatureDB:FinalizeSQL()
 */
 OGRErr VFKFeatureDB:ExecuteSQL(const char *pszSQLCommand)
 {
-    VFKReaderSQLite *poReader = (VFKReaderSQLite *) m_poDataBlock->GetReader();
-    sqlite3  *poDB = poReader->m_poDB;
+    /* TODO: solve
+    VFKReaderDB *poReader = (VFKReaderDB *) m_poDataBlock->GetReader();
+    poDB = poReader->m_poDB;
 
     int rc = sqlite3_prepare(poDB, pszSQLCommand, -1,
                          &m_hStmt, NULL);
@@ -145,6 +146,7 @@ OGRErr VFKFeatureDB:ExecuteSQL(const char *pszSQLCommand)
     }
 
     return OGRERR_NONE;
+     */
 }
 
 /*!
