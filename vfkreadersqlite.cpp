@@ -367,6 +367,7 @@ OGRErr VFKReaderSQLite::ExecuteSQL(std::vector<VFKDbValue>& record, int idx)
                 value->set_int(sqlite3_column_int(m_hStmt[idx], i));
                 break;
             case DT_BIGINT:
+            case DT_UBIGINT:
                 value->set_bigint(sqlite3_column_int64(m_hStmt[idx], i));
                 break;
             case DT_DOUBLE:

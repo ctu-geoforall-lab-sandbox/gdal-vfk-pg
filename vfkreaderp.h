@@ -40,13 +40,14 @@
 
 class VFKReader;
 
-enum VFKSQLTYPE { DT_INT, DT_BIGINT, DT_DOUBLE, DT_TEXT };
+enum VFKSQLTYPE { DT_INT, DT_BIGINT, DT_UBIGINT, DT_DOUBLE, DT_TEXT };
 
 class VFKDbValue
 {
 private:
    int m_iVal;
-   GIntBig m_iValB;
+   GIntBig m_iValBig;
+   GUIntBig m_iValUBig;
    double m_dVal;
    CPLString m_sVal;
    
@@ -58,12 +59,14 @@ public:
    VFKSQLTYPE get_type() const { return m_type; }
    
    void set_int(int val)        { m_iVal = val; } //TODO: zjednodusit
-   void set_bigint(GIntBig val) { m_iValB = val; }
+   void set_bigint(GIntBig val) { m_iValBig = val; }
+   void set_ubigint(GUIntBig val) { m_iValUBig = val; }
    void set_double(double val)  { m_dVal = val; }
    void set_text(char *val)     { m_sVal.assign(val, strlen(val)); }
     
    operator int()       { return m_iVal; }
-   operator GIntBig()   { return m_iValB; }
+   operator GIntBig()   { return m_iValBig; }
+   operator GUIntBig()   { return m_iValUBig; }
    operator double()    { return m_dVal; }
    operator CPLString() { return m_sVal; }
 };

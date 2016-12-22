@@ -19,6 +19,8 @@ private:
    OGRErr        ExecuteSQL(sqlite3_stmt *);
    std::vector<sqlite3_stmt *>m_hStmt; // TODO: ** ?
   
+   friend class   VFKFeatureSQLite;
+
 public:
    VFKReaderSQLite(const char *);
    virtual ~VFKReaderSQLite();
@@ -31,5 +33,27 @@ public:
    OGRErr        ExecuteSQL(std::vector<VFKDbValue>&, int = 0);
 }
 ;
+
+/************************************************************************/
+/*                              VFKFeatureSQLite                        */
+/************************************************************************/
+class VFKFeatureSQLite : public VFKFeatureDB
+{
+private:
+    sqlite3_stmt        *m_hStmt;
+    
+    OGRErr ExecuteSQL(const char *pszSQLCommand);
+    void   FinalizeSQL();
+    
+public:
+    VFKFeatureSQLite(IVFKDataBlock * poDataBlock):
+       VFKFeatureDB(poDataBlock), m_hStmt(NULL)  {}
+    VFKFeatureSQLite(IVFKDataBlock * poDataBlock, int iRowId, GIntBig nFID):
+       VFKFeatureDB(poDataBlock, iRowId, nFID), m_hStmt(NULL) {}
+    VFKFeatureSQLite(const VFKFeature *poVFKFeature):
+       VFKFeatureDB(poVFKFeature), m_hStmt(NULL) {}
+
+    OGRErr LoadProperties(OGRFeature *);
+};
 
 #endif // GDAL_OGR_VFK_VFKREADERSQLITE_H_INCLUDED

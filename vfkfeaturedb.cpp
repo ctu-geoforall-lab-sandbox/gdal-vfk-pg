@@ -43,11 +43,10 @@ CPL_CVSID("$Id: vfkfeaturesqlite.cpp 35571 2016-09-30 20:37:19Z goatbar $");
 
   \param poDataBlock pointer to related IVFKDataBlock
 */
-VFKFeatureDB:VFKFeatureDB( IVFKDataBlock *poDataBlock ) :
+VFKFeatureDB::VFKFeatureDB( IVFKDataBlock *poDataBlock ) :
     IVFKFeature(poDataBlock),
     // Starts at 1.
-    m_iRowId(static_cast<int>(poDataBlock->GetFeatureCount() + 1)),
-    m_hStmt(NULL)
+    m_iRowId(static_cast<int>(poDataBlock->GetFeatureCount() + 1))
 {
     // Set FID from DB.
     SetFIDFromDB();  // -> m_nFID
@@ -60,11 +59,10 @@ VFKFeatureDB:VFKFeatureDB( IVFKDataBlock *poDataBlock ) :
   \param iRowId feature DB rowid (starts at 1)
   \param nFID feature id
 */
-VFKFeatureDB:VFKFeatureDB( IVFKDataBlock *poDataBlock, int iRowId,
-                                    GIntBig nFID) :
+VFKFeatureDB::VFKFeatureDB(IVFKDataBlock *poDataBlock, int iRowId,
+                           GIntBig nFID) :
     IVFKFeature(poDataBlock),
-    m_iRowId(iRowId),
-    m_hStmt(NULL)
+    m_iRowId(iRowId)
 {
     m_nFID = nFID;
 }
@@ -72,18 +70,23 @@ VFKFeatureDB:VFKFeatureDB( IVFKDataBlock *poDataBlock, int iRowId,
 /*!
   \brief Read FID from DB
 */
-OGRErr VFKFeatureDB:SetFIDFromDB()
+OGRErr VFKFeatureDB::SetFIDFromDB()
 {
     CPLString   osSQL;
+    VFKReaderDB *poReader = (VFKReaderDB *) m_poDataBlock->GetReader();
 
     osSQL.Printf("SELECT %s FROM %s WHERE rowid = %d",
                  FID_COLUMN, m_poDataBlock->GetName(), m_iRowId);
-    if (ExecuteSQL(osSQL.c_str()) != OGRERR_NONE)
+
+    std::vector<VFKDbValue> record;
+    record.push_back(VFKDbValue(DT_BIGINT));
+    poReader->PrepareStatement(osSQL.c_str());
+    if (poReader->ExecuteSQL(record) != OGRERR_NONE) {
+        m_nFID = -1;
         return OGRERR_FAILURE;
+    }
 
-    m_nFID = sqlite3_column_int(m_hStmt, 0);
-
-    FinalizeSQL();
+    m_nFID = static_cast<GIntBig> (record[0]);
 
     return OGRERR_NONE;
 }
@@ -93,60 +96,9 @@ OGRErr VFKFeatureDB:SetFIDFromDB()
 
   \param iRowId row id to be set
 */
-void VFKFeatureDB:SetRowId(int iRowId)
+void VFKFeatureDB::SetRowId(int iRowId)
 {
     m_iRowId = iRowId;
-}
-
-/*!
-  \brief Finalize SQL statement
-*/
-void VFKFeatureDB:FinalizeSQL()
-{
-    sqlite3_finalize(m_hStmt);
-    m_hStmt = NULL;
-}
-
-/*!
-  \brief Execute SQL (select) statement
-
-  \param pszSQLCommand SQL command string
-
-  \return OGRERR_NONE on success or OGRERR_FAILURE on error
-*/
-OGRErr VFKFeatureDB:ExecuteSQL(const char *pszSQLCommand)
-{
-    /* TODO: solve
-    VFKReaderDB *poReader = (VFKReaderDB *) m_poDataBlock->GetReader();
-    poDB = poReader->m_poDB;
-
-    int rc = sqlite3_prepare(poDB, pszSQLCommand, -1,
-                         &m_hStmt, NULL);
-    if (rc != SQLITE_OK) {
-        CPLError(CE_Failure, CPLE_AppDefined,
-                 "In ExecuteSQL(): sqlite3_prepare(%s):\n  %s",
-                 pszSQLCommand, sqlite3_errmsg(poDB));
-
-        if(m_hStmt != NULL) {
-            FinalizeSQL();
-        }
-        return OGRERR_FAILURE;
-    }
-    rc = sqlite3_step(m_hStmt);
-    if (rc != SQLITE_ROW) {
-        CPLError(CE_Failure, CPLE_AppDefined,
-                 "In ExecuteSQL(): sqlite3_step(%s):\n  %s",
-                 pszSQLCommand, sqlite3_errmsg(poDB));
-
-        if (m_hStmt) {
-            FinalizeSQL();
-        }
-
-        return OGRERR_FAILURE;
-    }
-
-    return OGRERR_NONE;
-     */
 }
 
 /*!
@@ -154,12 +106,11 @@ OGRErr VFKFeatureDB:ExecuteSQL(const char *pszSQLCommand)
 
   Read VFK feature from VFK file and insert it into DB
 */
-VFKFeatureDB:VFKFeatureDB( const VFKFeature *poVFKFeature ) :
+VFKFeatureDB::VFKFeatureDB(const VFKFeature *poVFKFeature) :
     IVFKFeature(poVFKFeature->m_poDataBlock),
     // Starts at 1.
     m_iRowId(static_cast<int>(
-        poVFKFeature->m_poDataBlock->GetFeatureCount() + 1)),
-    m_hStmt(NULL)
+        poVFKFeature->m_poDataBlock->GetFeatureCount() + 1))
 {
     m_nFID = poVFKFeature->m_nFID;
 }
@@ -171,7 +122,7 @@ VFKFeatureDB:VFKFeatureDB( const VFKFeature *poVFKFeature ) :
 
   \return true on success or false on failure
 */
-bool VFKFeatureDB:LoadGeometryPoint()
+bool VFKFeatureDB::LoadGeometryPoint()
 {
     return false;
 }
@@ -183,7 +134,7 @@ bool VFKFeatureDB:LoadGeometryPoint()
 
   \return true on success or false on failure
 */
-bool VFKFeatureDB:LoadGeometryLineStringSBP()
+bool VFKFeatureDB::LoadGeometryLineStringSBP()
 {
     return false;
 }
@@ -195,7 +146,7 @@ bool VFKFeatureDB:LoadGeometryLineStringSBP()
 
   \return true on success or false on failure
 */
-bool VFKFeatureDB:LoadGeometryLineStringHP()
+bool VFKFeatureDB::LoadGeometryLineStringHP()
 {
     return false;
 }
@@ -207,43 +158,7 @@ bool VFKFeatureDB:LoadGeometryLineStringHP()
 
   \return true on success or false on failure
 */
-bool VFKFeatureDB:LoadGeometryPolygon()
+bool VFKFeatureDB::LoadGeometryPolygon()
 {
     return false;
-}
-
-/*!
-  \brief Load feature properties from DB
-
-  \param poFeature pointer to OGR feature
-
-  \return OGRERR_NONE on success or OGRERR_FAILURE on failure
-*/
-OGRErr VFKFeatureDB:LoadProperties(OGRFeature *poFeature)
-{
-    CPLString   osSQL;
-
-    osSQL.Printf("SELECT * FROM %s WHERE rowid = %d",
-                 m_poDataBlock->GetName(), m_iRowId);
-    if (ExecuteSQL(osSQL.c_str()) != OGRERR_NONE)
-        return OGRERR_FAILURE;
-
-    for (int iField = 0; iField < m_poDataBlock->GetPropertyCount(); iField++) {
-        if (sqlite3_column_type(m_hStmt, iField) == SQLITE_NULL) /* skip null values */
-            continue;
-        OGRFieldType fType = poFeature->GetDefnRef()->GetFieldDefn(iField)->GetType();
-        if (fType == OFTInteger)
-            poFeature->SetField(iField,
-                                sqlite3_column_int(m_hStmt, iField));
-        else if (fType == OFTReal)
-            poFeature->SetField(iField,
-                                sqlite3_column_double(m_hStmt, iField));
-        else
-            poFeature->SetField(iField,
-                                (const char *) sqlite3_column_text(m_hStmt, iField));
-    }
-
-    FinalizeSQL();
-
-    return OGRERR_NONE;
 }

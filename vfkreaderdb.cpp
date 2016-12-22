@@ -86,8 +86,8 @@ int VFKReaderDB::ReadDataBlocks()
     PrepareStatement(osSQL.c_str());
    
     while(ExecuteSQL(record) == OGRERR_NONE) {
-        const char *pszName = static_cast<const char *> (record[0]); 
-        const char *pszDefn = static_cast<const char *> (record[1];
+        const char *pszName = static_cast<CPLString> (record[0]); 
+        const char *pszDefn = static_cast<CPLString> (record[1]);
         IVFKDataBlock *poNewDataBlock =
             (IVFKDataBlock *) CreateDataBlock(pszName);
         poNewDataBlock->SetGeometryType();
@@ -219,7 +219,10 @@ int VFKReaderDB::ReadDataRecords(IVFKDataBlock *poDataBlock)
             /* check DB consistency */
             osSQL.Printf("SELECT num_features FROM %s WHERE table_name = '%s'",
                          VFK_DB_TABLE, pszName);
-            if (ExecuteSQL(osSQL.c_str(), nFeatDB) == OGRERR_NONE && nFeatDB > 0 && nFeatDB != poDataBlockCurrent->GetFeatureCount()) {
+            int nFeatDB;
+            if (ExecuteSQL(osSQL.c_str(), nFeatDB) == OGRERR_NONE &&
+                nFeatDB > 0 &&
+                nFeatDB != poDataBlockCurrent->GetFeatureCount()) {
 	       CPLError(CE_Failure, CPLE_AppDefined,
                              "%s: Invalid number of features " CPL_FRMT_GIB " (should be %d)",
                              pszName, poDataBlockCurrent->GetFeatureCount(), nFeatDB);
@@ -324,7 +327,7 @@ void VFKReaderDB::CreateIndex(const char *name, const char *table, const char *c
 IVFKDataBlock *VFKReaderDB::CreateDataBlock(const char *pszBlockName)
 {
    /* create new data block, i.e. table in DB */
-    return new VFKDataBlockSQLite(pszBlockName, (IVFKReader *) this);
+    return new VFKDataBlockDB(pszBlockName, (IVFKReader *) this);
 }
 
 /*!

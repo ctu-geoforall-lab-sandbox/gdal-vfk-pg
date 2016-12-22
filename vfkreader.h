@@ -164,9 +164,6 @@ public:
 class VFKFeatureDB : public IVFKFeature
 {
 private:
-    int                  m_iRowId;           /* rowid in DB */
-    sqlite3_stmt        *m_hStmt;            // TODO: data type for pg statment?
-
     bool                 LoadGeometryPoint();
     bool                 LoadGeometryLineStringSBP();
     bool                 LoadGeometryLineStringHP();
@@ -174,14 +171,21 @@ private:
 
     OGRErr               SetFIDFromDB();
     OGRErr               ExecuteSQL(const char *);
+
+    /* TODO
+    virtual OGRErr       ExecuteSQL(const char *pszSQLCommand) = 0;
     void                 FinalizeSQL();
+    */
+
+protected:
+    int                  m_iRowId;           /* rowid in DB */
 
 public:
     VFKFeatureDB(IVFKDataBlock *);
     VFKFeatureDB(IVFKDataBlock *, int, GIntBig);
     VFKFeatureDB(const VFKFeature *);
 
-    OGRErr               LoadProperties(OGRFeature *);
+    virtual OGRErr       LoadProperties(OGRFeature *) = 0;
     void                 SetRowId(int);
 };
 

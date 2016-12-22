@@ -44,7 +44,7 @@ CPL_CVSID("$Id: vfkdatablocksqlite.cpp 35571 2016-09-30 20:37:19Z goatbar $");
 
   \return number of invalid features
 */
-int VFKDataBlockDB:LoadGeometryPoint()
+int VFKDataBlockDB::LoadGeometryPoint()
 {
     if (LoadGeometryFromDB()) /* try to load geometry from DB */
         return 0;
@@ -116,7 +116,7 @@ int VFKDataBlockDB:LoadGeometryPoint()
   \param[in,out] rowIdFeat list of row ids which forms linestring
   \param[in,out] nGeometries number of features with valid geometry
 */
-bool VFKDataBlockDB:SetGeometryLineString(VFKFeatureDB *poLine, OGRLineString *oOGRLine,
+bool VFKDataBlockDB::SetGeometryLineString(VFKFeatureDB *poLine, OGRLineString *oOGRLine,
                                                bool& bValid, const char *ftype,
                                                std::vector<int>& rowIdFeat, int& nGeometries)
 {
@@ -209,7 +209,7 @@ bool VFKDataBlockDB:SetGeometryLineString(VFKFeatureDB *poLine, OGRLineString *o
 
   \return number of invalid features
 */
-int VFKDataBlockDB:LoadGeometryLineStringSBP()
+int VFKDataBlockDB::LoadGeometryLineStringSBP()
 {
     int nInvalid = 0;
 
@@ -252,8 +252,8 @@ int VFKDataBlockDB:LoadGeometryLineStringSBP()
 
        
         std::vector<VFKDbValue> record;
-        record.push_back(VFKDbValue(DT_BIGINT));
-        record.push_back(VFKDbValue(DT_BIGINT));
+        record.push_back(VFKDbValue(DT_UBIGINT));
+        record.push_back(VFKDbValue(DT_UBIGINT));
         record.push_back(VFKDbValue(DT_TEXT));
         record.push_back(VFKDbValue(DT_INT));
         poReader->PrepareStatement(osSQL.c_str());
@@ -351,7 +351,7 @@ int VFKDataBlockDB:LoadGeometryLineStringSBP()
 
   \return number of invalid features
 */
-int VFKDataBlockDB:LoadGeometryLineStringHP()
+int VFKDataBlockDB::LoadGeometryLineStringHP()
 {
     int nInvalid = 0;
     VFKReaderDB *poReader = (VFKReaderDB *) m_poReader;
@@ -390,7 +390,7 @@ int VFKDataBlockDB:LoadGeometryLineStringHP()
     int nGeometries = 0;
    
     std::vector<VFKDbValue> record;
-    record.push_back(VFKDbValue(DT_BIGINT));
+    record.push_back(VFKDbValue(DT_UBIGINT));
     record.push_back(VFKDbValue(DT_BIGINT));
     record.push_back(VFKDbValue(DT_INT));
     poReader->PrepareStatement(osSQL.c_str());
@@ -398,7 +398,7 @@ int VFKDataBlockDB:LoadGeometryLineStringHP()
     while( poReader->ExecuteSQL(record) == OGRERR_NONE )
     {
         /* read values */
-        vrValue[0] = static_cast<GIntBig> (record[0]);
+        vrValue[0] = static_cast<GUIntBig> (record[0]);
         const GIntBig iFID = static_cast<GIntBig> (record[1]);
         const int rowId = static_cast<int> (record[2]);
 
@@ -419,7 +419,7 @@ int VFKDataBlockDB:LoadGeometryLineStringHP()
             poOgrGeometry = poLine->GetGeometry();
         }
         if (!poOgrGeometry || !poFeature->SetGeometry(poOgrGeometry)) {
-            CPLDebug("OGR-VFK", "VFKDataBlockDB:LoadGeometryLineStringHP(): name=%s fid=%ld "
+            CPLDebug("OGR-VFK", "VFKDataBlockDB:LoadGeometryLineStringHP(): name=%s fid=" CPL_FRMT_GIB
                      "id=" CPL_FRMT_GUIB " -> %s geometry", m_pszName, iFID, vrValue[0],
                      poOgrGeometry ? "invalid" : "empty");
             nInvalid++;
@@ -447,7 +447,7 @@ int VFKDataBlockDB:LoadGeometryLineStringHP()
 
   \return number of invalid features
 */
-int VFKDataBlockDB:LoadGeometryPolygon()
+int VFKDataBlockDB::LoadGeometryPolygon()
 {
     VFKReaderDB *poReader = (VFKReaderDB*) m_poReader;
 
@@ -513,7 +513,7 @@ int VFKDataBlockDB:LoadGeometryPolygon()
     int nGeometries = 0;
    
     std::vector<VFKDbValue> record;
-    record.push_back(VFKDbValue(DT_BIGINT));
+    record.push_back(VFKDbValue(DT_UBIGINT));
     record.push_back(VFKDbValue(DT_BIGINT));
     record.push_back(VFKDbValue(DT_INT));
     poReader->PrepareStatement(osSQL.c_str());
@@ -521,7 +521,7 @@ int VFKDataBlockDB:LoadGeometryPolygon()
     while(poReader->ExecuteSQL(record) == OGRERR_NONE) {
         /* read values */
         const GUIntBig id = static_cast<GUIntBig> (record[0]);
-        const GIntBig iFID = static_cast<GIntBig> (record[1])
+        const GIntBig iFID = static_cast<GIntBig> (record[1]);
         const int rowId = static_cast<int> (record[2]);
 
         VFKFeatureDB *poFeature =
@@ -563,7 +563,7 @@ int VFKDataBlockDB:LoadGeometryPolygon()
         size_t nLines = poLineList.size();
         if (nLines < 1) {
             CPLDebug("OGR-VFK",
-                     "%s: unable to collect rings for polygon fid = %ld (no lines)",
+                     "%s: unable to collect rings for polygon fid = " CPL_FRMT_GIB " (no lines)",
                      m_pszName, iFID);
             nInvalidNoLines++;
             continue;
@@ -593,12 +593,12 @@ int VFKDataBlockDB:LoadGeometryPolygon()
             }
             nCount++;
         }
-        CPLDebug("OGR-VFK", "%s: fid = %ld nlines = %d -> nrings = %d", m_pszName,
+        CPLDebug("OGR-VFK", "%s: fid = " CPL_FRMT_GIB " nlines = %d -> nrings = %d", m_pszName,
                  iFID, (int)nLines, (int)poRingList.size());
 
         if (poLineList.size() > 0) {
             CPLDebug("OGR-VFK",
-                     "%s: unable to collect rings for polygon fid = %ld",
+                     "%s: unable to collect rings for polygon fid = " CPL_FRMT_GIB,
                      m_pszName, iFID);
             nInvalidNoRings++;
             continue;
@@ -674,13 +674,13 @@ int VFKDataBlockDB:LoadGeometryPolygon()
             }
             else {
                 if (poOgrRing->getNumPoints() == 2) {
-                    CPLDebug("OGR-VFK", "%s: Polygon (fid = %ld) bridge removed",
+                    CPLDebug("OGR-VFK", "%s: Polygon (fid = " CPL_FRMT_GUIB ") bridge removed",
                              m_pszName, iFID);
                     nBridges++;
                 }
                 else {
                     CPLDebug("OGR-VFK",
-                             "%s: Polygon (fid = %ld) unclosed ring skipped",
+                             "%s: Polygon (fid = " CPL_FRMT_GUIB ") unclosed ring skipped",
                              m_pszName, iFID);
                 }
             }
@@ -730,7 +730,7 @@ int VFKDataBlockDB:LoadGeometryPolygon()
 
   \return pointer to feature definition or NULL on failure (not found)
 */
-IVFKFeature *VFKDataBlockDB:GetFeature(GIntBig nFID)
+IVFKFeature *VFKDataBlockDB::GetFeature(GIntBig nFID)
 {
     if (m_nFeatureCount < 0) {
         m_poReader->ReadDataRecords(this);
@@ -770,8 +770,8 @@ IVFKFeature *VFKDataBlockDB:GetFeature(GIntBig nFID)
 
   \return pointer to feature definition or NULL on failure (not found)
 */
-VFKFeatureDB *VFKDataBlockDB:GetFeature(const char *column, GUIntBig value,
-                                                 bool bGeom)
+VFKFeatureDB *VFKDataBlockDB::GetFeature(const char *column, GUIntBig value,
+                                         bool bGeom)
 {
     VFKReaderDB *poReader = (VFKReaderDB *) m_poReader;
 
@@ -806,8 +806,8 @@ VFKFeatureDB *VFKDataBlockDB:GetFeature(const char *column, GUIntBig value,
 
   \return pointer to feature definition or NULL on failure (not found)
 */
-VFKFeatureDB *VFKDataBlockDB:GetFeature(const char **column, GUIntBig *value, int num,
-                                                 bool bGeom)
+VFKFeatureDB *VFKDataBlockDB::GetFeature(const char **column, GUIntBig *value, int num,
+                                         bool bGeom)
 {
     VFKReaderDB *poReader = (VFKReaderDB *) m_poReader;
    
@@ -848,7 +848,7 @@ VFKFeatureDB *VFKDataBlockDB:GetFeature(const char **column, GUIntBig *value, in
 
   \return list of features
 */
-VFKFeatureDBList VFKDataBlockDB:GetFeatures(const char **column, GUIntBig *value, int num)
+VFKFeatureDBList VFKDataBlockDB::GetFeatures(const char **column, GUIntBig *value, int num)
 {
     VFKReaderDB *poReader = (VFKReaderDB *) m_poReader;
 
@@ -883,9 +883,9 @@ VFKFeatureDBList VFKDataBlockDB:GetFeatures(const char **column, GUIntBig *value
 
   \return OGRERR_NONE on success otherwise OGRERR_FAILURE
 */
-OGRErr VFKDataBlockDB:SaveGeometryToDB(const OGRGeometry *poGeom, int iRowId)
+OGRErr VFKDataBlockDB::SaveGeometryToDB(const OGRGeometry *poGeom, int iRowId)
 {
-    int        rc, nWKBLen;
+    int        nWKBLen;
     CPLString  osSQL;
 
     VFKReaderDB *poReader = (VFKReaderDB *) m_poReader;
@@ -925,7 +925,7 @@ OGRErr VFKDataBlockDB:SaveGeometryToDB(const OGRGeometry *poGeom, int iRowId)
 
   \return true if geometry successfully loaded otherwise false
 */
-bool VFKDataBlockDB:LoadGeometryFromDB()
+bool VFKDataBlockDB::LoadGeometryFromDB()
 {
     VFKReaderDB *poReader = (VFKReaderDB *) m_poReader;
 
@@ -935,7 +935,7 @@ bool VFKDataBlockDB:LoadGeometryFromDB()
     CPLString osSQL;
     osSQL.Printf("SELECT num_geometries FROM %s WHERE table_name = '%s'",
                  VFK_DB_TABLE, m_pszName);
-    int nGeomentries;
+    int nGeometries;
     if (poReader->ExecuteSQL(osSQL.c_str(), nGeometries) != OGRERR_NONE)
         return false;
 
@@ -1016,7 +1016,7 @@ bool VFKDataBlockDB:LoadGeometryFromDB()
 
   \param nGeometries number of geometries to update
 */
-void VFKDataBlockDB:UpdateVfkBlocks(int nGeometries) {
+void VFKDataBlockDB::UpdateVfkBlocks(int nGeometries) {
     CPLString osSQL;
 
     VFKReaderDB *poReader = (VFKReaderDB*) m_poReader;
@@ -1047,7 +1047,7 @@ void VFKDataBlockDB:UpdateVfkBlocks(int nGeometries) {
   \param iFID feature id to set up
   \param rowId list of rows to update
 */
-void VFKDataBlockDB:UpdateFID(GIntBig iFID, std::vector<int> rowId)
+void VFKDataBlockDB::UpdateFID(GIntBig iFID, std::vector<int> rowId)
 {
     CPLString osSQL, osValue;
     VFKReaderDB *poReader = (VFKReaderDB *) m_poReader;
@@ -1074,7 +1074,7 @@ void VFKDataBlockDB:UpdateFID(GIntBig iFID, std::vector<int> rowId)
 
   \return true if closed otherwise false
 */
-bool VFKDataBlockDB:IsRingClosed( const OGRLinearRing *poRing )
+bool VFKDataBlockDB::IsRingClosed( const OGRLinearRing *poRing )
 {
     const int nPoints = poRing->getNumPoints();
     if (nPoints < 3)
@@ -1092,7 +1092,7 @@ bool VFKDataBlockDB:IsRingClosed( const OGRLinearRing *poRing )
 
   \return property name or NULL
 */
-const char *VFKDataBlockDB:GetKey() const
+const char *VFKDataBlockDB::GetKey() const
 {
     if( GetPropertyCount() > 1 )
     {

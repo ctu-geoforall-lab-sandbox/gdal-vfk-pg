@@ -1,13 +1,11 @@
 
 include ../../../GDALmake.opt
 
-CORE_OBJ = vfkreader.o vfkreadersqlite.o \
-	vfkdatablock.o vfkdatablocksqlite.o \
+CORE_OBJ = vfkreader.o vfkreaderdb.o vfkreadersqlite.o \
+	vfkdatablock.o vfkdatablockdb.o \
 	vfkpropertydefn.o \
-	vfkfeature.o vfkfeaturesqlite.o \
-	vfkproperty.o \
-	vfkreaderdb.o \
-	vfkreaderpg.o
+	vfkfeature.o vfkfeaturedb.o vfkfeaturesqlite.o \
+	vfkproperty.o
 
 OGR_OBJ = ogrvfkdriver.o ogrvfkdatasource.o ogrvfklayer.o
 
