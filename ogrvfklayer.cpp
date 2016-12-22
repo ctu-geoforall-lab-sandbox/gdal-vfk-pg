@@ -212,7 +212,9 @@ OGRFeature *OGRVFKLayer::GetFeature(IVFKFeature *poVFKFeature)
     poOGRFeature->SetFID(poVFKFeature->GetFID());
     // poOGRFeature->SetFID(++m_iNextFeature);
 
+    /* TODO: requires poVFKFeatureSQLite 
     poVFKFeature->LoadProperties(poOGRFeature);
+    */
 
     /* test against the attribute query */
     if (m_poAttrQuery != NULL &&

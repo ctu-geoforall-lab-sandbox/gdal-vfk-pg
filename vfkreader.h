@@ -123,7 +123,6 @@ public:
     OGRGeometry         *GetGeometry();
 
     bool                 LoadGeometry();
-    virtual OGRErr       LoadProperties(OGRFeature *) = 0;
 };
 
 /************************************************************************/
@@ -185,7 +184,9 @@ public:
     VFKFeatureDB(IVFKDataBlock *, int, GIntBig);
     VFKFeatureDB(const VFKFeature *);
 
+    /*
     virtual OGRErr       LoadProperties(OGRFeature *) = 0;
+    */
     void                 SetRowId(int);
 };
 

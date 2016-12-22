@@ -59,3 +59,23 @@ VFKReaderPG::VFKReaderPG(const char *pszFileName) :
 VFKReaderPG::~VFKReaderPG()
 {
 }
+
+void   VFKReaderPG::PrepareStatement(const char *pszSQLCommand, unsigned int idx)
+{
+}
+
+/*
+OGRErr VFKReaderSQLite::ExecuteSQL(sqlite3_stmt *hStmt)
+*/
+
+OGRErr VFKReaderPG::ExecuteSQL(const char *pszSQLCommand, bool bQuiet)
+{
+}
+
+OGRErr VFKReaderPG::ExecuteSQL(const char *pszSQLCommand, int& count)
+{
+}
+
+OGRErr VFKReaderPG::ExecuteSQL(std::vector<VFKDbValue>& record, int idx)
+{
+}
