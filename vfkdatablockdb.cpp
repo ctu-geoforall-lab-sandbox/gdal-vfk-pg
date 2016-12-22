@@ -73,14 +73,14 @@ int VFKDataBlockDB:LoadGeometryPoint()
     record.push_back(VFKDbValue(DT_INT));
     poReader->PrepareStatement(osSQL.c_str());
    
-    while(poReader->ExecuteSQL(record) == OGRERR_NONE && record.size() > 0) {
+    while(poReader->ExecuteSQL(record) == OGRERR_NONE) { // TODO: needed (&& record.size() > 0) ?
         /* read values */
-        const double x = -1.0 * (double) record[0]; /* S-JTSK coordinate system expected */
-        const double y = -1.0 * (double) record[1];
+        const double x = -1.0 * static_cast<double> (record[0]); /* S-JTSK coordinate system expected */
+        const double y = -1.0 * static_cast<double> (record[1]);
 #ifdef DEBUG
-        const GIntBig iFID = (GIntBig) record[2];
+        const GIntBig iFID = static_cast<GIntBig> (record[2]);
 #endif
-        const int rowId = (int) record[3];
+        const int rowId = static_cast<int> (record[3]);
 
         poFeature = (VFKFeatureDB *) GetFeatureByIndex(rowId - 1);
         CPLAssert(NULL != poFeature && poFeature->GetFID() == iFID);
@@ -267,10 +267,10 @@ int VFKDataBlockDB:LoadGeometryLineStringSBP()
 
         while(poReader->ExecuteSQL(record) == OGRERR_NONE) {
             // read values
-            const GUIntBig id = (GIntBig) record[0];
-            const GUIntBig ipcb  = (GIntBig) record[1];
-            szFType = (CPLString) record[2]
-            int rowId = (int) record[3];
+            const GUIntBig id = static_cast<GUIntBig> (record[0]);
+            const GUIntBig ipcb  = static_cast<GUIntBig> (record[1]);
+            szFType = static_cast<CPLString> (record[2]);
+            int rowId = static_cast<int> (record[3]);
 
             if (ipcb == 1) {
                 VFKFeatureDB *poFeature =
@@ -399,7 +399,7 @@ int VFKDataBlockDB:LoadGeometryLineStringHP()
     {
         /* read values */
         vrValue[0] = static_cast<GIntBig> (record[0]);
-        const long iFID = static_cast<GIntBig> (record[1]);
+        const GIntBig iFID = static_cast<GIntBig> (record[1]);
         const int rowId = static_cast<int> (record[2]);
 
         VFKFeatureDB *poFeature =
@@ -520,8 +520,8 @@ int VFKDataBlockDB:LoadGeometryPolygon()
 
     while(poReader->ExecuteSQL(record) == OGRERR_NONE) {
         /* read values */
-        const GUIntBig id = static_cast<GIntBig> (record[0]);
-        const long iFID = static_cast<GIntBig> (record[1])
+        const GUIntBig id = static_cast<GUIntBig> (record[0]);
+        const GIntBig iFID = static_cast<GIntBig> (record[1])
         const int rowId = static_cast<int> (record[2]);
 
         VFKFeatureDB *poFeature =
@@ -547,12 +547,12 @@ int VFKDataBlockDB:LoadGeometryPolygon()
             }
 
 
- 	    std::vector<VFKDbValue> record1;
-	    record1.push_back(VFKDbValue(DT_BIGINT));
-	    poReader->PrepareStatement(osSQL.c_str(), 1);
+            std::vector<VFKDbValue> record1;
+            record1.push_back(VFKDbValue(DT_BIGINT));
+            poReader->PrepareStatement(osSQL.c_str(), 1);
 
-            while(poReader->ExecuteSQL(record, 1) == OGRERR_NONE) {
-                const GUIntBig idOb = static_cast<GIntBig> (record[0]);
+            while(poReader->ExecuteSQL(record1, 1) == OGRERR_NONE) {
+                const GUIntBig idOb = static_cast<GUIntBig> (record1[0]); // TODO: DT_UBIGINT ?
                 vrValue[0] = idOb;
                 VFKFeatureDB *poLineSbp =
                     poDataBlockLines2->GetFeature(vrColumn, vrValue, 2);
@@ -755,7 +755,7 @@ IVFKFeature *VFKDataBlockDB:GetFeature(GIntBig nFID)
 
     int rowId = -1;
     if (poReader->ExecuteSQL(osSQL.c_str(), rowId) != OGRERR_NONE) {
-        rowId -= 1;  // TODO: solve
+        return NULL;
     }
 
     return GetFeatureByIndex(rowId - 1);
@@ -786,10 +786,9 @@ VFKFeatureDB *VFKDataBlockDB:GetFeature(const char *column, GUIntBig value,
         osSQL += osColumn;
     }
 
+    int idx = -1;
     if (poReader->ExecuteSQL(osSQL.c_str(), idx) != OGRERR_NONE)
         return NULL;
-
-    const int idx -= 1;
 
     if (idx < 0 || idx >= m_nFeatureCount) // ? assert
         return NULL;
@@ -811,7 +810,6 @@ VFKFeatureDB *VFKDataBlockDB:GetFeature(const char **column, GUIntBig *value, in
                                                  bool bGeom)
 {
     VFKReaderDB *poReader = (VFKReaderDB *) m_poReader;
-    int idx;
    
     CPLString osSQL;
     osSQL.Printf("SELECT %s FROM %s WHERE ", FID_COLUMN, m_pszName);
@@ -831,9 +829,9 @@ VFKFeatureDB *VFKDataBlockDB:GetFeature(const char **column, GUIntBig *value, in
         osSQL += osItem;
     }
 
+    int idx = -1;
     if (poReader->ExecuteSQL(osSQL.c_str(), idx) != OGRERR_NONE)
         return NULL;
-    idx -= 1;
    
     if (idx < 0 || idx >= m_nFeatureCount) // ? assert
         return NULL;
@@ -869,12 +867,8 @@ VFKFeatureDBList VFKDataBlockDB:GetFeatures(const char **column, GUIntBig *value
 
     VFKFeatureDBList fList;
 
-    std::vector<VFKDbValue> record;
-    record.push_back(VFKDbValue(DT_INT));
-    poReader->PrepareStatement(osSQL.c_str());
-   
-    while (poReader->ExecuteSQL(record) == OGRERR_NONE) {
-        const int iRowId = static_cast<int> (record[0]);
+    int iRowId = -1;
+    while (poReader->ExecuteSQL(osSQL.c_str(), iRowId) == OGRERR_NONE) {
         fList.push_back((VFKFeatureDB *)GetFeatureByIndex(iRowId - 1));
     }
 
@@ -941,6 +935,7 @@ bool VFKDataBlockDB:LoadGeometryFromDB()
     CPLString osSQL;
     osSQL.Printf("SELECT num_geometries FROM %s WHERE table_name = '%s'",
                  VFK_DB_TABLE, m_pszName);
+    int nGeomentries;
     if (poReader->ExecuteSQL(osSQL.c_str(), nGeometries) != OGRERR_NONE)
         return false;
 

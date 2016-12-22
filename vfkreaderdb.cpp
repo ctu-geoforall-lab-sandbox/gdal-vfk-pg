@@ -86,8 +86,8 @@ int VFKReaderDB::ReadDataBlocks()
     PrepareStatement(osSQL.c_str());
    
     while(ExecuteSQL(record) == OGRERR_NONE) {
-        const char *pszName = static_cast<CPLString> (record[0]); 
-        const char *pszDefn = static_cast<CPLString> (record[1];
+        const char *pszName = static_cast<const char *> (record[0]); 
+        const char *pszDefn = static_cast<const char *> (record[1];
         IVFKDataBlock *poNewDataBlock =
             (IVFKDataBlock *) CreateDataBlock(pszName);
         poNewDataBlock->SetGeometryType();
@@ -134,12 +134,12 @@ int VFKReaderDB::ReadDataRecords(IVFKDataBlock *poDataBlock)
                      "table_name = '%s'",
                      VFK_DB_TABLE, pszName);
 
-       nDataRecords = ExecuteSQL(osSQL.c_str());
-       if (nDataRecords > 0)
-	 bReadDb = true; /* -> read from DB */
-       else
-	 nDataRecords = 0;
-
+        if (ExecuteSQL(osSQL.c_str(), nDataRecords) == OGRERR_NONE) {
+            if (nDataRecords > 0)
+                bReadDb = true; /* -> read from DB */
+            else
+                nDataRecords = 0;
+        }
        /* TODO: 
 	*         catch ... {
 	*             
@@ -154,14 +154,13 @@ int VFKReaderDB::ReadDataRecords(IVFKDataBlock *poDataBlock)
 	*         }
 	* 
 	*/
-	}       
-	else
-	{                     /* read all data blocks */
+    }       
+    else {                     /* read all data blocks */
         /* check for existing records (re-use already inserted data) */
         int count;
 	   
         osSQL.Printf("SELECT COUNT(*) FROM %s WHERE num_records > 0", VFK_DB_TABLE);
-        if (ExecuteSQL(osSQL.c_str(), count) == OGRERR_NONE && count != 0)
+        if (ExecuteSQL(osSQL.c_str(), count) == OGRERR_NONE && count > 0)
             bReadDb = true;     /* -> read from DB */
 
 
@@ -210,8 +209,8 @@ int VFKReaderDB::ReadDataRecords(IVFKDataBlock *poDataBlock)
 	    record.push_back(VFKDbValue(DT_INT));
  	    PrepareStatement(osSQL.c_str());
             while (ExecuteSQL(record) == OGRERR_NONE) {
-                const long iFID = (int) record[0]; // TODO: pb: long?
-                int iRowId = (int) record[1];
+                const GIntBig iFID = static_cast<GIntBig> (record[0]);
+                int iRowId = static_cast<int> (record[1]);
                 poNewFeature = new VFKFeatureDB(poDataBlockCurrent, iRowId, iFID);
                 poDataBlockCurrent->AddFeature(poNewFeature);
                 nDataRecords++;
