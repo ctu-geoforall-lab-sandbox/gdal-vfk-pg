@@ -70,7 +70,7 @@ VFKReaderPG::~VFKReaderPG()
    PQfinish(m_poDB);
 }
 
-OGRErr VFKReaderSQLite::ExecuteSQL(PGresult *hStmt)
+OGRErr VFKReaderPG::ExecuteSQL(PGresult *hStmt)
 {
    int rc;
    
