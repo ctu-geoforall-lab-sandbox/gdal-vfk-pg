@@ -14,7 +14,7 @@ class VFKReaderPG : public VFKReaderDB
 private:
    PGconn     *m_poDB;
    PGresult   *m_res;
-   const char *m_pszConnStr;
+   CPLString   m_pszConnStr;
 
    OGRErr        ExecuteSQL(PGresult *);
    std::vector<PGresult *> m_hStmt;

@@ -49,9 +49,20 @@ CPL_CVSID("$Id: vfkreadersqlite.cpp 35933 2016-10-25 16:46:26Z goatbar $");
  * */
 VFKReaderPG::VFKReaderPG(const char *pszFileName) : VFKReaderDB(pszFileName)
 {
-   m_pszConnStr = CPLGetConfigOption("OGR_VFK_DB_NAME", NULL);
-   
-   m_poDB = PQconnectdb(m_pszConnStr);
+   const char *pszDbName, *pszConnStr;
+
+   pszDbName = CPLGetConfigOption("OGR_VFK_DB_NAME", NULL);
+   pszConnStr = strstr(pszDbName, "PG:"); 
+   if (pszConnStr == NULL) {
+       CPLError(CE_Failure, CPLE_AppDefined,
+                "Invalid connection string");
+   }
+   m_pszConnStr = CPLString(pszConnStr + strlen("PG:"));
+   if (m_pszConnStr.back() == '"') {
+       /* remove '"' from connection string */
+       m_pszConnStr = m_pszConnStr.substr(0, m_pszConnStr.size()-1);
+   }
+   m_poDB = PQconnectdb(m_pszConnStr.c_str());
    if (PQstatus(m_poDB) != CONNECTION_OK)
    {	
 	CPLError(CE_Failure, CPLE_AppDefined,
@@ -59,7 +70,10 @@ VFKReaderPG::VFKReaderPG(const char *pszFileName) : VFKReaderDB(pszFileName)
 		 PQerrorMessage(m_poDB));
 	PQfinish(m_poDB);
    }
-   
+
+   /* TODO: check if vfk_tables exists and contains 8 columns
+      vfkreadersqlite.cpp:161
+   */
 }
 
 /*!
@@ -98,20 +112,16 @@ OGRErr VFKReaderPG::ExecuteSQL(PGresult *hStmt)
 }
 
 
-void   VFKReaderPG::PrepareStatement(const char *pszSQLCommand, unsigned int idx)
+void VFKReaderPG::PrepareStatement(const char *pszSQLCommand, unsigned int idx)
 {
-   CPLDebug("OGR-VFK", "VFKReaderDB::PrepareStatement(): %s", pszSQLCommand);
+   CPLDebug("OGR-VFK", "VFKReaderPG::PrepareStatement(): %s", pszSQLCommand);
    
    PGresult *hStmt;
-   if (idx < m_hStmt.size()) 
+   if (idx <= m_hStmt.size()) 
    {	
-      hStmt = PQprepare(m_poDB, "stmtname", pszSQLCommand, -1, NULL);
       m_hStmt.push_back(hStmt);
    }
-   else 
-   {	
-      hStmt = PQprepare(m_poDB, "stmtname", pszSQLCommand, -1, NULL);
-   }
+   hStmt = PQprepare(m_poDB, "stmtname", pszSQLCommand, -1, NULL);
    
    if (PQresultStatus(hStmt) != PGRES_TUPLES_OK) 
    {
