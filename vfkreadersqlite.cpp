@@ -241,7 +241,6 @@ VFKReaderSQLite::~VFKReaderSQLite()
         CPLDebug("OGR-VFK", "Internal DB (%s) deleted", m_pszDBname);
         VSIUnlink(m_pszDBname);
     }
-    delete[] m_pszDBname;
 }
 
 /*!
@@ -256,16 +255,13 @@ void VFKReaderSQLite::PrepareStatement(const char *pszSQLCommand, unsigned int i
     int rc;
     CPLDebug("OGR-VFK", "VFKReaderDB::PrepareStatement(): %s", pszSQLCommand);
 
-    if (idx < m_hStmt.size()) {
+    if (idx <= m_hStmt.size()) {
         sqlite3_stmt *hStmt;
-        rc = sqlite3_prepare(m_poDB, pszSQLCommand, -1,
-                             &hStmt, NULL);
         m_hStmt.push_back(hStmt);
     }
-    else {
-        rc = sqlite3_prepare(m_poDB, pszSQLCommand, -1,
-                             &(m_hStmt[idx]), NULL);
-    }
+
+    rc = sqlite3_prepare(m_poDB, pszSQLCommand, -1,
+                         &(m_hStmt[idx]), NULL);
 
     // TODO(schwehr): if( rc == SQLITE_OK ) return NULL;    
     if (rc != SQLITE_OK) {
@@ -299,8 +295,9 @@ OGRErr VFKReaderSQLite::ExecuteSQL(sqlite3_stmt *hStmt)
         CPLError(CE_Failure, CPLE_AppDefined,
                  "In ExecuteSQL(): sqlite3_step:\n  %s",
                  sqlite3_errmsg(m_poDB));
-        if (hStmt)
+        if (hStmt) {
             sqlite3_finalize(hStmt);
+        }
         return OGRERR_FAILURE;
     }
 
@@ -380,10 +377,12 @@ OGRErr VFKReaderSQLite::ExecuteSQL(std::vector<VFKDbValue>& record, int idx)
         }
     }
     else {
-        sqlite3_finalize(m_hStmt[idx]);
-        m_hStmt[idx] = NULL;
+        /* hStmt should be already finalized by ExecuteSQL() */
         if (idx > 0) {
             m_hStmt.erase(m_hStmt.begin() + idx);
+        }
+        else { /* idx == 0 */
+            m_hStmt[idx] = NULL;
         }
     }
 
