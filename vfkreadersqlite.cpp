@@ -253,26 +253,26 @@ VFKReaderSQLite::~VFKReaderSQLite()
 void VFKReaderSQLite::PrepareStatement(const char *pszSQLCommand, unsigned int idx)
 {
     int rc;
+    sqlite3_stmt *hStmt;
+
     CPLDebug("OGR-VFK", "VFKReaderDB::PrepareStatement(): %s", pszSQLCommand);
 
-    if (idx <= m_hStmt.size()) {
-        sqlite3_stmt *hStmt;
-        m_hStmt.push_back(hStmt);
-    }
-
     rc = sqlite3_prepare(m_poDB, pszSQLCommand, -1,
-                         &(m_hStmt[idx]), NULL);
+                         &hStmt, NULL);
 
     // TODO(schwehr): if( rc == SQLITE_OK ) return NULL;    
     if (rc != SQLITE_OK) {
+        sqlite3_finalize(hStmt);
+        
         CPLError(CE_Failure, CPLE_AppDefined,
                  "In PrepareStatement(): sqlite3_prepare(%s):\n  %s",
                  pszSQLCommand, sqlite3_errmsg(m_poDB));
 
-        if(m_hStmt[idx] != NULL) {
-            sqlite3_finalize(m_hStmt[idx]);
-            m_hStmt.erase(m_hStmt.begin() + idx);
-        }
+        return;
+    }
+
+    if (idx <= m_hStmt.size()) {
+        m_hStmt.push_back(hStmt);
     }
 }
 
@@ -339,13 +339,13 @@ OGRErr VFKReaderSQLite::ExecuteSQL(const char *pszSQLCommand, int& count)
     OGRErr ret;
     
     PrepareStatement(pszSQLCommand);
-    ret = ExecuteSQL(m_hStmt[0]); // TODO: solve
+    ret = ExecuteSQL(m_hStmt[0]); // TODO: avoid arrays
     if (ret == OGRERR_NONE) {
-        count = sqlite3_column_int(m_hStmt[0], 0); // TODO:
+        count = sqlite3_column_int(m_hStmt[0], 0); 
     }
 
-    sqlite3_finalize(m_hStmt[0]); // TODO
-    m_hStmt[0] = NULL; // TODO
+    sqlite3_finalize(m_hStmt[0]); 
+    m_hStmt[0] = NULL; 
 
     return ret;
 }

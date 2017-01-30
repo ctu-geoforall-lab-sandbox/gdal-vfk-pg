@@ -13,11 +13,10 @@ class VFKReaderPG : public VFKReaderDB
    
 private:
    PGconn     *m_poDB;
-   PGresult   *m_res;
    CPLString   m_pszConnStr;
 
    OGRErr        ExecuteSQL(PGresult *);
-   std::vector<PGresult *> m_hStmt;
+   std::vector<CPLString, PGresult *, PGresult *> m_hStmt;
   
 public:
    VFKReaderPG(const char *);
