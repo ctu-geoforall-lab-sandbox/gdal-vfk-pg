@@ -336,12 +336,15 @@ OGRErr VFKReaderSQLite::ExecuteSQL( const char *pszSQLCommand, bool bQuiet )
 
 OGRErr VFKReaderSQLite::ExecuteSQL(const char *pszSQLCommand, int& count)
 {
+    int idx;
     OGRErr ret;
-    
-    PrepareStatement(pszSQLCommand);
-    ret = ExecuteSQL(m_hStmt[0]); // TODO: avoid arrays
+
+    idx = m_hStmt.size();
+
+    PrepareStatement(pszSQLCommand, idx);
+    ret = ExecuteSQL(m_hStmt[idx]); // TODO: avoid arrays
     if (ret == OGRERR_NONE) {
-        count = sqlite3_column_int(m_hStmt[0], 0); 
+        count = sqlite3_column_int(m_hStmt[idx], 0); 
     }
 
     sqlite3_finalize(m_hStmt[0]); 

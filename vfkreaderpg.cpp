@@ -71,22 +71,23 @@ VFKReaderPG::VFKReaderPG(const char *pszFileName) : VFKReaderDB(pszFileName)
 	PQfinish(m_poDB);
    }
 
-   /* TODO: check if vfk_tables exists and contains 8 columns
-      vfkreadersqlite.cpp:161
-   */
-   CPLString osCommand;
-   PGresult *pResult;
-   osCommand.Printf("SELECT COUNT(*) FROM information_schema.columns "
-                    "WHERE table_name='%s'", VFK_DB_TABLE);
-   pResult = PQexec(m_poDB, osCommand.c_str());
-   if (!pResult || PQresultStatus(pResult) != PGRES_TUPLES_OK ||
-        PQntuples(pResult) != 1) {
-        PQclear(pResult);
-        return -1; // TODO
-    }
+   // TODO: explain (requires > PG >= 9.2)
+   PQsetSingleRowMode(m_poDB);
 
-    ret = atoi(PQgetvalue(pResult, 0, 0));
-    PQclear(pResult);
+   CPLString osSQL;
+   int ncols;
+   osSQL.Printf("SELECT COUNT(*) FROM information_schema.columns "
+                "WHERE table_name='%s'", VFK_DB_TABLE);
+   if (ExecuteSQL(osSQL.c_str(), ncols) != OGRERR_NONE) {
+        /* VFK table does not exist */
+        m_bNewDb = true;
+   }
+   else {
+       if (ncols != 7) {
+           // TODO: drop table
+           m_bNewDb = true;
+       }
+   }
 }
 
 /*!
@@ -99,33 +100,39 @@ VFKReaderPG::~VFKReaderPG()
 
 OGRErr VFKReaderPG::ExecuteSQL(PGresult *hStmt)
 {
+    int idx;
+    PGresult *hStmtExec;
 
-   PGresult *poStmt;
+    idx = 0;
+    while (m_hStmt[idx].prepared() != hStmt)
+        idx++;
 
+    // TODO: assert when hStmt not found
 
-   poStmt = PQexecPrepared(m_poDB, stmtname.c_str());
-   // TODO: test if poStmt is correct
-   
+    hStmtExec = PQexecPrepared(m_poDB, m_hStmt[idx].name(),
+                               0, NULL, NULL, NULL, 0);
 
-   rc = PQntuples(hStmt); //rc = sqlite3_step(hStmt);
+    if (hStmtExec == NULL ||
+        PQresultStatus(hStmtExec) != PGRES_SINGLE_TUPLE) {
+        if (PQresultStatus(hStmtExec) != PGRES_BAD_RESPONSE) {
+            if (hStmtExec)
+                PQclear(hStmtExec);
+            return OGRERR_NOT_ENOUGH_DATA;
+        }
+
+        if (hStmtExec)
+            PQclear(hStmtExec);
+
+        CPLError(CE_Failure, CPLE_AppDefined,
+                 "In ExecuteSQL(): %s",
+                 PQerrorMessage(m_poDB));
+        
+        return OGRERR_FAILURE;
+    }
    
-   /*
-   if (rc != SQLITE_ROW) { // TODO:
-      if (rc == SQLITE_DONE) {
-	 // sqlite3_finalize(hStmt); // TODO:
-	 return OGRERR_NOT_ENOUGH_DATA;
-      }
-      CPLError(CE_Failure, CPLE_AppDefined,
-	       "In ExecuteSQL(): sqlite3_step:\n  %s",
-	       PQerrorMessage(m_poDB));
-      if (hStmt)
-	// sqlite3_finalize(hStmt); // TODO:
-	return OGRERR_FAILURE;
-   }
-   */
-   
-   
-   return OGRERR_NONE;
+    m_hStmt[idx].setExec(hStmtExec);
+    
+    return OGRERR_NONE;
 }
 
 
@@ -147,101 +154,103 @@ void VFKReaderPG::PrepareStatement(const char *pszSQLCommand, unsigned int idx)
                 "In PrepareStatement(): PQprepare(%s):\n  %s",
                 pszSQLCommand, PQerrorMessage(m_poDB));
 
-       PQClear(hStmt);
+       PQclear(hStmt);
 
        return;
    }
 
-   if (idx <= m_hStmt.size()) {   
-       m_hStmt.push_back(hStmt);
+   if (idx <= m_hStmt.size()) {
+       m_hStmt.push_back(VFKStmtPG(szStmtName, hStmt));
    }
-
-   int ret;
-   ret = PQsetSingleRowMode(m_poDB);
-   CPLDebug("OGR-VFK", "PG single row mode: %d", ret);
 }
 
 OGRErr VFKReaderPG::ExecuteSQL(const char *pszSQLCommand, bool bQuiet)
 {
-    PrepareStatement(pszSQLCommand);
-    m_poRes = PQexec(m_poDB, pszSQLCommand);
-    if (!m_poRes || 
+    PGresult *hStmt;
+
+    hStmt = PQexec(m_poDB, pszSQLCommand); 
+    if (hStmt == NULL ||
         // TODO: PGRES_BAD_RESPONSE would be probably enough
-        (PQresultStatus(m_res) != PGRES_COMMAND_OK && PQresultStatus(m_res) != PGRES_TUPLES_OK)) { 
+        // (PQresultStatus(hStmt) != PGRES_COMMAND_OK && PQresultStatus(hStmt) != PGRES_TUPLES_OK)) { 
+        PQresultStatus(hStmt) != PGRES_BAD_RESPONSE) {
+        
         if (!bQuiet)
             CPLError(CE_Failure, CPLE_AppDefined,
                      "In ExecuteSQL(%s): %s",
                      pszSQLCommand, PQerrorMessage(m_poDB));
-      else
-          CPLError(CE_Warning, CPLE_AppDefined,
-                   "In ExecuteSQL(%s): %s",
-                   pszSQLCommand, PQerrorMessage(m_poDB));
-      PQclear(m_poRes);
+        else
+            CPLError(CE_Warning, CPLE_AppDefined,
+                     "In ExecuteSQL(%s): %s",
+                     pszSQLCommand, PQerrorMessage(m_poDB));
+        
+        return OGRERR_FAILURE;
+    }
     
-      return  OGRERR_FAILURE;
-   }
-   
-   return OGRERR_NONE;
+    return OGRERR_NONE;
 }
 
 OGRErr VFKReaderPG::ExecuteSQL(const char *pszSQLCommand, int &count)
 {
-   OGRErr ret;
-   
-   PrepareStatement(pszSQLCommand);
-   ret = ExecuteSQL(m_hStmt[0]); // TODO: avoid arrays
-   if (ret == OGRERR_NONE) {
-       const char *pszCount;
-       char *pszErr;
+    int idx;
+    OGRErr ret;
 
-       pszCount = PQgetvalue(m_hStmt[0], 0, 0);
-       count = static_cast<int>(strtol(pszCount, &pszErr, 0));
-       if (*pszErr != '\0') {
-           CPLDebug("OGR-VFK", "Unable to cast '%s' to integer. %s",
-                    pszCount, pszErr);
-           return OGRERR_FAILURE;
-       }
-   }
-   
-   PQclear(m_hStmt[0]);
-   m_hStmt[0] = NULL;
-   
-   return ret;
+    idx = m_hStmt.size() - 1;
+    // TODO: assert idx < 0
+    
+    PrepareStatement(pszSQLCommand, idx);
+    ret = ExecuteSQL(m_hStmt[idx].prepared()); // TODO: avoid arrays
+    if (ret == OGRERR_NONE) {
+        const char *pszCount;
+        char *pszErr;
+        
+        pszCount = PQgetvalue(m_hStmt[idx].exec(), 0, 0);
+        count = static_cast<int>(strtol(pszCount, &pszErr, 0));
+        if (*pszErr != '\0') {
+            CPLDebug("OGR-VFK", "Unable to cast '%s' to integer. %s",
+                     pszCount, pszErr);
+            return OGRERR_FAILURE;
+        }
+    }
+    
+    m_hStmt[idx].clear();
+    
+    return ret;
 }
 
 OGRErr VFKReaderPG::ExecuteSQL(std::vector<VFKDbValue> &record, int idx)
 {
    OGRErr ret;
    
-   ret = ExecuteSQL(m_hStmt[idx]);
+   ret = ExecuteSQL(m_hStmt[idx].prepared());
    
    // TODO: num_of_column == size
    if (ret == OGRERR_NONE) {
-      for (int i = 0; i < record.size(); i++) { // TODO: iterator
+      for (size_t i = 0; i < record.size(); i++) { // TODO: iterator
 	 VFKDbValue *value = &(record[i]);
+         PGresult * hStmt = m_hStmt[idx].exec();
 	 switch (value->get_type()) {
 	  case DT_INT:
-	    value->set_int(*(int*)PQgetvalue(m_hStmt[idx], 0, i));
+	    value->set_int(*(int*)PQgetvalue(hStmt, 0, i));
 	    break;
 	  case DT_BIGINT:
-	    value->set_bigint(*(GIntBig*)PQgetvalue(m_hStmt[idx], 0, i));
+          case DT_UBIGINT:
+	    value->set_bigint(*(GIntBig*)PQgetvalue(hStmt, 0, i));
 	    break;
 	  case DT_DOUBLE:
-	    value->set_double(*(double*)PQgetvalue(m_hStmt[idx], 0, i));
+	    value->set_double(*(double*)PQgetvalue(hStmt, 0, i));
 	    break;
 	  case DT_TEXT:
-	    value->set_text(PQgetvalue(m_hStmt[idx], 0, i));
+	    value->set_text(PQgetvalue(hStmt, 0, i));
 	    break;
 	 }
       }
    }
    else
    {
-      // sqlite3_finalize(m_hStmt[idx]);
-      m_hStmt[idx] = NULL;
-      if (idx > 0) {
-	 m_hStmt.erase(m_hStmt.begin() + idx);
-      }
+       m_hStmt[idx].clear();
+       if (idx > 0) {
+           m_hStmt.erase(m_hStmt.begin() + idx);
+       }
    }
    
    

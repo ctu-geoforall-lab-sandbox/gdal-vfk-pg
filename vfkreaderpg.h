@@ -12,11 +12,35 @@ class VFKReaderPG : public VFKReaderDB
 {
    
 private:
+    class VFKStmtPG {
+    private:
+        CPLString m_hStmtName;
+        PGresult * m_hStmtPrep;
+        PGresult * m_hStmtExec;
+    public:
+    VFKStmtPG(CPLString szStmtName, PGresult *hStmtPrep) :
+        m_hStmtName(szStmtName),
+            m_hStmtPrep(hStmtPrep) {}
+
+        const char * name() const { return m_hStmtName.c_str(); }
+        PGresult *   prepared() const { return m_hStmtPrep; }
+        PGresult *   exec() const { return m_hStmtExec; }
+        
+        void setExec(PGresult *hStmtExec) { m_hStmtExec = hStmtExec; }
+        void clear() {
+            m_hStmtName.clear();
+            PQclear(m_hStmtPrep);
+            PQclear(m_hStmtExec);
+            m_hStmtPrep = m_hStmtExec = NULL;
+        }
+    };
+
    PGconn     *m_poDB;
    CPLString   m_pszConnStr;
 
    OGRErr        ExecuteSQL(PGresult *);
-   std::vector<CPLString, PGresult *, PGresult *> m_hStmt;
+   // TODO: do it better
+   std::vector<VFKStmtPG>  m_hStmt;
   
 public:
    VFKReaderPG(const char *);
