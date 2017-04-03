@@ -58,7 +58,7 @@ VFKReaderPG::VFKReaderPG(const char *pszFileName) : VFKReaderDB(pszFileName)
                 "Invalid connection string");
    }
    m_pszConnStr = CPLString(pszConnStr + strlen("PG:"));
-   if (m_pszConnStr.back() == '"') {
+   if (*m_pszConnStr.rbegin() == '"') {
        /* remove '"' from connection string */
        m_pszConnStr = m_pszConnStr.substr(0, m_pszConnStr.size()-1);
    }
