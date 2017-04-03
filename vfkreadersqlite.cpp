@@ -336,19 +336,38 @@ OGRErr VFKReaderSQLite::ExecuteSQL( const char *pszSQLCommand, bool bQuiet )
 
 OGRErr VFKReaderSQLite::ExecuteSQL(const char *pszSQLCommand, int& count)
 {
-    int idx;
+    size_t idx;
     OGRErr ret;
 
+    /* add prepared statement to array */
     idx = m_hStmt.size();
-
     PrepareStatement(pszSQLCommand, idx);
+
     ret = ExecuteSQL(m_hStmt[idx]); // TODO: avoid arrays
     if (ret == OGRERR_NONE) {
         count = sqlite3_column_int(m_hStmt[idx], 0); 
     }
 
-    sqlite3_finalize(m_hStmt[0]); 
-    m_hStmt[0] = NULL; 
+    /* finalize and drop prepared statement */
+    sqlite3_finalize(m_hStmt[idx]);
+    m_hStmt.erase(m_hStmt.begin() + idx);
+
+    return ret;
+}
+
+OGRErr VFKReaderSQLite::ExecuteSQL(int idx)
+{
+    OGRErr ret;
+
+    /* add prepared statement to array */
+    if (idx < 0)
+        idx = m_hStmt.size() - 1;
+
+    ret = ExecuteSQL(m_hStmt[idx]); // TODO: avoid arrays
+
+    /* TODO (needed?): finalize and drop prepared statement */
+    sqlite3_finalize(m_hStmt[idx]);
+    m_hStmt.erase(m_hStmt.begin() + idx);
 
     return ret;
 }
@@ -381,13 +400,25 @@ OGRErr VFKReaderSQLite::ExecuteSQL(std::vector<VFKDbValue>& record, int idx)
     }
     else {
         /* hStmt should be already finalized by ExecuteSQL() */
-        if (idx > 0) {
-            m_hStmt.erase(m_hStmt.begin() + idx);
-        }
-        else { /* idx == 0 */
-            m_hStmt[idx] = NULL;
-        }
+        m_hStmt.erase(m_hStmt.begin() + idx);
     }
 
     return ret;
+}
+
+OGRErr VFKReaderSQLite::SaveGeometryToDB(GByte *pabyWKB, size_t nWKBLen)
+{
+    int rc;
+    size_t idx;
+
+    idx = m_hStmt.size() - 1;
+    rc = sqlite3_bind_blob(m_hStmt[idx], 1, pabyWKB, nWKBLen, CPLFree);
+    if (rc != SQLITE_OK) {
+        sqlite3_finalize(m_hStmt[idx]);
+        CPLError(CE_Failure, CPLE_AppDefined,
+                 "Storing geometry in DB failed");
+        return OGRERR_FAILURE;
+    }
+
+    return OGRERR_NONE;
 }

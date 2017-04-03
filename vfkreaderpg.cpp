@@ -72,7 +72,7 @@ VFKReaderPG::VFKReaderPG(const char *pszFileName) : VFKReaderDB(pszFileName)
    }
 
    // TODO: explain (requires > PG >= 9.2)
-   PQsetSingleRowMode(m_poDB);
+   // PQsetSingleRowMode(m_poDB);
 
    CPLString osSQL;
    int ncols;
@@ -112,8 +112,9 @@ OGRErr VFKReaderPG::ExecuteSQL(PGresult *hStmt)
     hStmtExec = PQexecPrepared(m_poDB, m_hStmt[idx].name(),
                                0, NULL, NULL, NULL, 0);
 
-    if (hStmtExec == NULL ||
-        PQresultStatus(hStmtExec) != PGRES_SINGLE_TUPLE) {
+    if (hStmtExec == NULL) {
+        /* TODO:
+           || PQresultStatus(hStmtExec) != PGRES_SINGLE_TUPLE) */
         if (PQresultStatus(hStmtExec) != PGRES_BAD_RESPONSE) {
             if (hStmtExec)
                 PQclear(hStmtExec);
@@ -217,6 +218,11 @@ OGRErr VFKReaderPG::ExecuteSQL(const char *pszSQLCommand, int &count)
     return ret;
 }
 
+OGRErr VFKReaderPG::ExecuteSQL(int idx)
+{
+    return OGRERR_NONE;
+}
+
 OGRErr VFKReaderPG::ExecuteSQL(std::vector<VFKDbValue> &record, int idx)
 {
    OGRErr ret;
@@ -255,4 +261,9 @@ OGRErr VFKReaderPG::ExecuteSQL(std::vector<VFKDbValue> &record, int idx)
    
    
    return ret;
+}
+
+OGRErr VFKReaderPG::SaveGeometryToDB(GByte *papyWKB, size_t nWKBLen)
+{
+    return OGRERR_NONE;
 }

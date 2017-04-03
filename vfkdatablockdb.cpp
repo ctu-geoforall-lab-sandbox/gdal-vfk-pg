@@ -885,39 +885,29 @@ VFKFeatureDBList VFKDataBlockDB::GetFeatures(const char **column, GUIntBig *valu
 */
 OGRErr VFKDataBlockDB::SaveGeometryToDB(const OGRGeometry *poGeom, int iRowId)
 {
-    int        nWKBLen;
     CPLString  osSQL;
 
-    VFKReaderDB *poReader = (VFKReaderDB *) m_poReader;
+     VFKReaderDB *poReader = (VFKReaderDB *) m_poReader;
 
     if (poGeom) {
-        nWKBLen = poGeom->WkbSize();
+        size_t nWKBLen = poGeom->WkbSize();
         GByte *pabyWKB = (GByte *) CPLMalloc(nWKBLen + 1);
         poGeom->exportToWkb(wkbNDR, pabyWKB);
 
         osSQL.Printf("UPDATE %s SET %s = ? WHERE rowid = %d",
                      m_pszName, GEOM_COLUMN, iRowId);
-       /* TODO: solve
-       hStmt = poReader->PrepareStatement(osSQL.c_str());
+        poReader->PrepareStatement(osSQL.c_str());
 
-        rc = sqlite3_bind_blob(hStmt, 1, pabyWKB, nWKBLen, CPLFree);
-        if (rc != SQLITE_OK) {
-            sqlite3_finalize(hStmt);
-            CPLError(CE_Failure, CPLE_AppDefined,
-                     "Storing geometry in DB failed");
+        if (poReader->SaveGeometryToDB(pabyWKB, nWKBLen) != OGRERR_NONE)
             return OGRERR_FAILURE;
-        }
-	 */
     }
     else { /* invalid */
-        /*
         osSQL.Printf("UPDATE %s SET %s = NULL WHERE rowid = %d",
                      m_pszName, GEOM_COLUMN, iRowId);
-        hStmt = poReader->PrepareStatement(osSQL.c_str());
-	 */
+        poReader->PrepareStatement(osSQL.c_str());
     }
 
-    return 0; // poReader->ExecuteSQL(hStmt); /* calls sqlite3_finalize() */
+    return poReader->ExecuteSQL();
 }
 
 /*!

@@ -51,7 +51,10 @@ public:
    void          PrepareStatement(const char *, unsigned int = 0);
    OGRErr        ExecuteSQL(const char *, bool = FALSE);
    OGRErr        ExecuteSQL(const char *, int&);
+   OGRErr        ExecuteSQL(int = -1);
    OGRErr        ExecuteSQL(std::vector<VFKDbValue>&, int = 0);
+
+   OGRErr        SaveGeometryToDB(GByte *, size_t);
 }
 ;
 

@@ -155,7 +155,10 @@ public:
     virtual void    PrepareStatement(const char *, unsigned int = 0) = 0;
     virtual OGRErr  ExecuteSQL(const char *, bool = FALSE) = 0;
     virtual OGRErr  ExecuteSQL(const char *, int&) = 0;
+    virtual OGRErr  ExecuteSQL(int = -1) = 0;
     virtual OGRErr  ExecuteSQL(std::vector<VFKDbValue>&, int = 0) = 0;
+
+    virtual OGRErr  SaveGeometryToDB(GByte *, size_t) = 0;
 };
 
 #endif // GDAL_OGR_VFK_VFKREADERP_H_INCLUDED
